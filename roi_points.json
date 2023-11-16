@@ -1,0 +1,5 @@
+[
+    {"id": 0, "name": "Injection", "comment": "Sensors thrown in by hand, 5m upstream of inlet"}, 
+    {"id": 1, "name": "Nadir", "comment": "Nadir chosen based on lowest of three pressure sensors"}, 
+    {"id": 2, "name": "Tailwater", "comment": "Chosen based on constant depth ca. 1200 mbar"}
+]
