@@ -406,12 +406,11 @@ class LoadScenarioData(LabelFrame):
 
         s_data = api.read_scenario_from_json_file(self.params, selected_scenario)
         self.scenario_data.add_scenario_data(s_data)
-
+        self.run_combo.configure(values=())
+        self.run_combo.set("")
         #update run list
         for r in s_data["runs"]:
-            #my_combobox.configure(values=())
-            self.run_combo.configure(values=())
-            self.run_combo.set("")
+            print("loaded runs in scenario", r["name"])
             self.run_combo['values'] = (*self.run_combo['values'], r['name'])
         #fself.console_frame.clear_console()
         self.console_frame.insert_text("Loaded " + s_data["name"] + "" '\n') 

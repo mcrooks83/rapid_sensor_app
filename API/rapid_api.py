@@ -36,17 +36,24 @@ def get_total_acclimation_pressure(h, local_atmos_pressure):
 
 # this function will need to be ammended as more sensor outputs come online
 # and will differ between v1 and v2
-def create_data_axes(data):
+def create_data_axes(data, params):
     #create lists of axis data
     x_t  = []
     y_p = []
     for ind, val in enumerate(data): 
         
-        xt = val[0]  #ind #/ param['fs']
-        
-        x_t.append(xt) # temps en secondes sur toute la longeur de l'eesai
-        yp = val[4]#(val[4]-1000)*0.01 
-        y_p.append(yp) # pression en mH2O - 10m H2O (la pression est nulle à la surface et est équivalente à la profondeur du sensor. A 2m de profondeur la pression vaut 2 mH2O).
+        if(params.get_parameter("sensor_version")==1):
+            xt = ind / params.get_parameter('fs')
+            x_t.append(xt)
+            yp = (val[4]-1000)*0.01
+            y_p.append(yp)
+        else:
+            x_t.append(val[0])
+            y_p.append(val[4])
+
+        # temps en secondes sur toute la longeur de l'eesai
+        #yp = val[4]#(val[4]-1000)*0.01 
+        #y_p.append(yp) # pression en mH2O - 10m H2O (la pression est nulle à la surface et est équivalente à la profondeur du sensor. A 2m de profondeur la pression vaut 2 mH2O).
         # add acceleration to this
     return x_t, y_p
 
@@ -131,13 +138,13 @@ def get_results_v2_format(filename, param):
         results = [unpacking_v2_format(row,param) for row in read_row(mm,param)]
     return results
 
-def pre_process_file(deployment, data, deployment_number):
+def pre_process_file(deployment, data, deployment_number, params):
     print("processing: ", deployment)
     deployment_dict = {}
     name_of_deployment ='Test n°' + str(deployment_number) + ' ' + splitext(deployment)[0]
     deployment_dict["name"] = name_of_deployment
     deployment_dict['sensor_type'] = "FBS" # or BDS
-    x_t, y_p = create_data_axes(data)
+    x_t, y_p = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
     
@@ -158,21 +165,23 @@ def load_scenario_from_directory(params, result_queue):
     
     # load all runs in the scenario
     # could parallelise this if too slow
-    for run_dir_name in listdir("."):
+    print(listdir("."))
+    directory_list = listdir(".")
+    for run_dir_name in directory_list:
+        print(run_dir_name)
         if isdir(run_dir_name):
-            
+            print("loading run", run_dir_name)
             run_data = {
                 "name": run_dir_name,
                 "deployments" : []
             }
-            chdir(r"{}".format(scenario_dir + "/" +  run_dir_name))
-            print("loading run: ", run_dir_name)
+            chdir(r"{}".format(run_dir_name))
 
             if(sensor_version == 1):
-                print("we are actuall here")
+                print("sensor version: 1")
                 deployments = glob('*txt')
             else:
-                print("we should be here")
+                print("sensor version: 2")
                 deployments= glob('*.IMP')
                 
             print("deployments in run", deployments)
@@ -187,7 +196,7 @@ def load_scenario_from_directory(params, result_queue):
                         res = get_results(d, params)
                     else:
                         res = get_results_v2_format(d, params)
-                    deployment_result = pre_process_file(d, res, deployment_number)
+                    deployment_result = pre_process_file(d, res, deployment_number, params)
                     run_data["deployments"].append(deployment_result)
                     deployment_number=deployment_number+1
                 t2=time.time()
@@ -195,7 +204,13 @@ def load_scenario_from_directory(params, result_queue):
             
                 #add to the scenario
                 scenario_data["runs"].append(run_data)
+            
+            chdir(r"{}".format(scenario_dir))
+
     chdir(r"{}".format(params.get_parameter('working_dir')))
+
+    for r in scenario_data["runs"]:
+        print(r["name"])
     #results = []
     #results.append("done")
     #results.append(scenario_data)
