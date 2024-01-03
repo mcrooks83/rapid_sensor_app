@@ -426,7 +426,7 @@ class LoadScenarioData(LabelFrame):
     
     def load_scenario(self):
         print("loading scenario")
-        self.console_frame.insert_text("Loading scenario ..." + '\n') 
+        self.console_frame.insert_text("Loading scenario, please wait ..." + '\n') 
         self.pbar_ind.tkraise()
         self.start_loading_progress()
         sensor_version = self.sensor_version_var.get()
@@ -443,6 +443,7 @@ class LoadScenarioData(LabelFrame):
                 if scenario_data:
                 #write data to json file for later
                     print("writing data")
+                    self.console_frame.insert_text("Saving " + scenario_data["name"] + " please wait..." '\n') 
                     write_data = api.write_scenario_to_json_file(scenario_data, self.params)
                     if(write_data):
                         self.scenario_data.add_loaded_scenario(scenario_data["name"])

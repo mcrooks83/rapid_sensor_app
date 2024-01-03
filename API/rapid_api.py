@@ -45,8 +45,13 @@ def create_data_axes(data, params):
         if(params.get_parameter("sensor_version")==1):
             xt = ind / params.get_parameter('fs')
             x_t.append(xt)
-            yp = (val[4]-1000)*0.01
-            y_p.append(yp)
+            if(len(val) > 2):
+                yp = (val[4]-1000)*0.01
+                y_p.append(yp)
+            else:
+                yp = (val[0]-1000)*0.01
+                y_p.append(yp)
+
         else:
             x_t.append(val[0])
             y_p.append(val[4])
@@ -64,6 +69,7 @@ def unpacking(row,params):
     index = unpack('>h', bytes(row[0:2]))[0]
     index = index - 1
     list_values.append(index)
+    
     acc_x = unpack('>h', bytes(row[2:4]))[0]
     acc_x = float(acc_x) / params.get_parameter('acc_gain')
     list_values.append(acc_x)
