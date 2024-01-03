@@ -134,6 +134,8 @@ def get_results(filename, params):
         mm = mmap(file.fileno(), 0, access=ACCESS_READ)
         if(params.get_parameter("sensor_version") == 1):
             results = [unpacking(row,params) for row in read_row(mm,params)]
+        mm.close()
+        file.close() 
     return results
 
 def get_v1_pressure_results_only(filename, param):
@@ -162,6 +164,8 @@ def get_results_v2_format(filename, param):
     with open(filename,'rb') as file:
         mm = mmap(file.fileno(), 0, access=ACCESS_READ)
         results = [unpacking_v2_format(row,param) for row in read_row(mm,param)]
+        mm.close()
+        file.close() 
     return results
 
 def pre_process_file(deployment, data, deployment_number, params):
