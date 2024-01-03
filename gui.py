@@ -1,27 +1,16 @@
 
 ## imports
-from os.path import splitext,join,isdir,dirname
-from pandas import read_excel, read_csv
-from glob import glob 
-from os import chdir, mkdir,listdir,remove, getcwd
+from os import listdir, getcwd
 import asyncio
 import json
-import concurrent.futures
-import threading 
 import queue
 import multiprocessing
-from queue import Queue
 
 #tkinter
 from tkinter import E,W,S,N, IntVar, Toplevel,BOTH, INSERT,END,Tk,PanedWindow,Label,LabelFrame,CENTER,Button,Frame,Entry,RIGHT,StringVar,Radiobutton,Checkbutton,Text,Scrollbar, Listbox
 from tkinter import filedialog as fd
 from tkinter.ttk import Combobox, Progressbar, Treeview
 
-#from numpy import min,shape,sort,isnan,zeros,ones,array
-#from matplotlib.pyplot import close,ioff,Figure
-#from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
-
-from matplotlib.pyplot import close,ioff,Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
 
@@ -32,8 +21,6 @@ from UI_Components.Title import Title
 
 from Functions.read_me import read_me_text, readme_heading_text
 from API import rapid_api as api
-
-
 
 #### Main UI using Tkinter ###
 
@@ -70,15 +57,12 @@ class ButtonFrame(Frame):
         self.console_frame.clear_console()
 
     def read_me(self):
-        print("read me called")
         self.console_frame.configure_state("normal")
         self.console_frame.insert_text(readme_heading_text)
         self.console_frame.tag_config('manual_mess', foreground='green', underline=1)
         self.console_frame.insert_text(read_me_text)
         self.console_frame.configure_state(state ='disabled')
    
-
-
 class LeftFrame(Frame):
     def __init__(self, master, console_frame, params, scenario_data, plot_frame, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -86,9 +70,7 @@ class LeftFrame(Frame):
         self.scenario_data = scenario_data
         self.plot_frame = plot_frame
         self.console_frame = console_frame
-        
-        #self.config(bg=bg_color)
-        #self.pack(fill='both', expand=True)
+
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.sidebar = SideBar(self,self.console_frame, self.params, self.scenario_data, self.plot_frame)
@@ -231,7 +213,6 @@ class LabelROIFrame(LabelFrame):
         roi_points = api.read_roi_points(self.params)
         for p in roi_points:
             #this isnt quite right but seems to work
-            button_name = p["name"].lower() + "_" + "roi_button"
             self.button_name = Radiobutton(self, text=p["name"], value=p["id"], variable = self.roi_var, command=self.select_roi_point)
             self.button_name.grid(row=0,column=p["id"],columnspan=1,sticky='w',pady=5)
             
@@ -257,7 +238,6 @@ class LabelROIFrame(LabelFrame):
         roi_added_label = Label(add_roi_window, text="")
         roi_added_label.grid(row=2, column=0,  sticky='w', padx=5)
         
-
 
     def save_new_roi(self, roi_text, roi_added_label):         
         if roi_text:
@@ -432,19 +412,8 @@ class LoadScenarioData(LabelFrame):
         self.start_loading_progress()
         sensor_version = self.sensor_version_var.get()
         print("sensor version:", sensor_version, flush=True)           
-
-        # this gets the complete scenario from the queue
+        
         def check_process_result(process, result_queue, deployment_done_queue):
-            #try:
-            #    deployment = deployment_done_queue.get(block=True)
-            #    print("processed deployment", deployment)
-            #    self.console_frame.insert_text("processed deployment " + deployment + '\n') 
-            #    self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
-            #except queue.Empty:
-            #    self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
-            #    print("dep EMPT")
-            
-            #print("NEXT")
             try:
                 
                 data = result_queue.get(block=True)
