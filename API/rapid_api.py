@@ -136,7 +136,27 @@ def get_results(filename, params):
             results = [unpacking(row,params) for row in read_row(mm,params)]
     return results
 
-
+def get_v1_pressure_results_only(filename, param):
+    results = []
+    with open(filename,'rb') as file:
+        mm = mmap(file.fileno(), 0, access=ACCESS_READ)
+        row_size = param.get_parameter("packet_length") # should be 11
+       
+        num_rows = len(mm) // row_size
+        print(row_size, num_rows)
+        # only read multiples of 20
+        #results = [unpacking(row,param) for row in read_row(mm,param)]
+        
+        # loop over every 20th row (2khz - 100hz ratio)
+        for i in range(0, num_rows, 20):
+            offset = i * row_size
+            mm.seek(offset)  # Move to the starting position of the row
+            row = mm.read(row_size)
+            results.append(unpacking(row,param))
+        
+        mm.close()
+        file.close() 
+    return results
 
 def get_results_v2_format(filename, param):
     with open(filename,'rb') as file:
@@ -199,7 +219,8 @@ def load_scenario_from_directory(params, result_queue):
                 t1=time.time()
                 for d in deployments:
                     if(sensor_version == 1):
-                        res = get_results(d, params)
+                        #res = get_results(d, params)
+                        res = get_v1_pressure_results_only(d, params)
                     else:
                         res = get_results_v2_format(d, params)
                     deployment_result = pre_process_file(d, res, deployment_number, params)
