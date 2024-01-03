@@ -364,6 +364,7 @@ class LoadScenarioData(LabelFrame):
         self.blank = Frame(self.progress_bar_frame)
         self.blank.grid(row=7, column=0, columnspan=7, sticky="news")
         self.result_queue = multiprocessing.Queue()
+        self.deployment_done_queue = multiprocessing.Queue()
 
 
     def update_sensor_version(self):
@@ -430,39 +431,59 @@ class LoadScenarioData(LabelFrame):
         self.pbar_ind.tkraise()
         self.start_loading_progress()
         sensor_version = self.sensor_version_var.get()
-        print("sensor version:", sensor_version, flush=True)
+        print("sensor version:", sensor_version, flush=True)           
 
-        def check_process_result(process, result_queue):
+        # this gets the complete scenario from the queue
+        def check_process_result(process, result_queue, deployment_done_queue):
+            #try:
+            #    deployment = deployment_done_queue.get(block=True)
+            #    print("processed deployment", deployment)
+            #    self.console_frame.insert_text("processed deployment " + deployment + '\n') 
+            #    self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
+            #except queue.Empty:
+            #    self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
+            #    print("dep EMPT")
+            
+            #print("NEXT")
             try:
-                scenario_data = result_queue.get(block=False)
-                print("loading completed")
-                self.stop_loading_progress()
-                #self.pbar_ind.grid_remove()
-                self.pbar_ind.lower()
+                
+                data = result_queue.get(block=True)
 
-                if scenario_data:
-                #write data to json file for later
-                    print("writing data")
-                    self.console_frame.insert_text("Saving " + scenario_data["name"] + " please wait..." '\n') 
-                    write_data = api.write_scenario_to_json_file(scenario_data, self.params)
-                    if(write_data):
-                        self.scenario_data.add_loaded_scenario(scenario_data["name"])
-                        print("scenario written succcesfully")
-                        #self.console_frame.clear_console()
-                        self.console_frame.insert_text("Scenario " + scenario_data["name"] + " saved succesfully" '\n') 
-                    #add to combox
-                    if scenario_data["name"] not in self.scenario_combo['values']:
-                        self.scenario_combo['values'] += (scenario_data["name"],)
+                if "d" in data:
+                    print("processed deployment", data["d"])
+                    self.console_frame.insert_text("processed deployment " + data["d"] + '\n') 
+                    self.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
+
+                else:
+                    scenario_data = data
+                    print("loading completed")
+                    self.stop_loading_progress()
+                    #self.pbar_ind.grid_remove()
+                    self.pbar_ind.lower()
+
+                    if scenario_data:
+                    #write data to json file for later
+                        print("writing data")
+                        self.console_frame.insert_text("Saving " + scenario_data["name"] + " please wait..." '\n') 
+                        write_data = api.write_scenario_to_json_file(scenario_data, self.params)
+                        if(write_data):
+                            self.scenario_data.add_loaded_scenario(scenario_data["name"])
+                            print("scenario written succcesfully")
+                            #self.console_frame.clear_console()
+                            self.console_frame.insert_text("Scenario " + scenario_data["name"] + " saved succesfully" '\n') 
+                        #add to combox
+                        if scenario_data["name"] not in self.scenario_combo['values']:
+                            self.scenario_combo['values'] += (scenario_data["name"],)
                 
             except queue.Empty:
+                print("EMPTY")
                 # Handle the case where the queue is empty
-                self.after(1, check_process_result, process, self.result_queue)
+                self.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
 
-                
-        process = multiprocessing.Process(target=api.load_scenario_from_directory, args=[self.params, self.result_queue])
+        process = multiprocessing.Process(target=api.load_scenario_from_directory, args=[self.params, self.result_queue, self.deployment_done_queue])
         process.start()
            
-        self.master.after(1, check_process_result, process, self.result_queue)
+        self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
 
 
     def select_dir(self):

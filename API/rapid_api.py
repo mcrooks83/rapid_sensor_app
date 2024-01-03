@@ -145,7 +145,6 @@ def get_v1_pressure_results_only(filename, param):
         row_size = param.get_parameter("packet_length") # should be 11
        
         num_rows = len(mm) // row_size
-        print(row_size, num_rows)
         # only read multiples of 20
         #results = [unpacking(row,param) for row in read_row(mm,param)]
         
@@ -169,7 +168,7 @@ def get_results_v2_format(filename, param):
     return results
 
 def pre_process_file(deployment, data, deployment_number, params):
-    print("processing: ", deployment)
+    #print("processing: ", deployment)
     deployment_dict = {}
     name_of_deployment ='Test n°' + str(deployment_number) + ' ' + splitext(deployment)[0]
     deployment_dict["name"] = name_of_deployment
@@ -180,7 +179,7 @@ def pre_process_file(deployment, data, deployment_number, params):
     
     return deployment_dict
 
-def load_scenario_from_directory(params, result_queue):
+def load_scenario_from_directory(params, result_queue, deployment_done_queue):
     scenario_dir = params.get_parameter('scenario_folder_dir')
     sensor_version = params.get_parameter("sensor_version")
     print(scenario_dir, flush=True)
@@ -213,8 +212,6 @@ def load_scenario_from_directory(params, result_queue):
             else:
                 print("sensor version: 2")
                 deployments= glob('*.IMP')
-                
-            print("deployments in run", deployments)
             
             # if there are files to read
             if deployments:
@@ -229,6 +226,7 @@ def load_scenario_from_directory(params, result_queue):
                         res = get_results_v2_format(d, params)
                     deployment_result = pre_process_file(d, res, deployment_number, params)
                     run_data["deployments"].append(deployment_result)
+                    result_queue.put({"d":d})
                     deployment_number=deployment_number+1
                 t2=time.time()
                 print(("It takes %s seconds to load data ") % (t2 - t1))
@@ -240,20 +238,8 @@ def load_scenario_from_directory(params, result_queue):
 
     chdir(r"{}".format(params.get_parameter('working_dir')))
 
-    for r in scenario_data["runs"]:
-        print(r["name"])
-    #results = []
-    #results.append("done")
-    #results.append(scenario_data)
-    #result_queue.put(copy.deepcopy(scenario_data), block=True)
     result_queue.put(scenario_data, block=True)
-    if(result_queue.empty()):
-        print("empty queue")
-       
-    else:
-        print("has data in api")
-    
-    #result_queue = scenario_data
+  
     return scenario_data
 
 def write_scenario_to_json_file(s, params):
