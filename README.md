@@ -6,13 +6,14 @@ python / python3 gui.py
 
 ## TODO
 
-label a depoyment as faulty -> test
-ensure this file is not used in further processing -> test
-annote the depoyment graph with faulty -> test 
-update the drop down with deployments that are labeled and not -> test
-allow box plots etc for single scenario -> test
+label a depoyment as faulty                                     -> test
+ensure this file is not used in further processing              -> test
+annote the depoyment graph with faulty                          -> test 
+update the drop down with deployments that are labeled and not  -> test
+allow box plots etc for single scenario                         -> test
 
 deal with acceleration 
+explort plot data buttons
 
 
 # attention

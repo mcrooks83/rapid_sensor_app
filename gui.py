@@ -639,7 +639,6 @@ class PlotFrame(LabelFrame):
         else:
             self.console_frame.insert_text("No more deployments" + "\n") 
 
-
     def load_next_deployment(self):
         index = self.fig_combo.current()
         num_deployments = len(self.fig_combo['values'])
