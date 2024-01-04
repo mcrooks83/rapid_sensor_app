@@ -15,7 +15,7 @@ class Parameters:
         self.parameters['click_sect']=False
 
         # adresse des différents fichiers
-        self.parameters['folder_dir']='/Users/mcrooks/Desktop/extra/RIGHTSTEP/RS-WEARABLE_PLATFORM/data_experiments/TalTech_EDF/data/Ueberfall/'
+        self.parameters['folder_dir']=''
         self.parameters['save_fold']=''
         self.parameters['sectFile']=''
         self.parameters['output_dir_name'] = 'scenario_outputs'
@@ -36,8 +36,6 @@ class Parameters:
 
         self.parameters['p_gain'] = 10
         self.parameters['acc_gain'] = 10
-
-
 
         # mode de filtrage temporel par défaut 
         self.parameters['time_filter']='None'

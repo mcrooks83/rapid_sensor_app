@@ -5,6 +5,7 @@ import asyncio
 import json
 import queue
 import multiprocessing
+import copy
 
 #tkinter
 from tkinter import E,W,S,N, IntVar, Toplevel,BOTH, INSERT,END,Tk,PanedWindow,Label,LabelFrame,CENTER,Button,Frame,Entry,RIGHT,StringVar,Radiobutton,Checkbutton,Text,Scrollbar, Listbox
@@ -112,16 +113,16 @@ class CompareScenariosFrame(LabelFrame):
         self.scenario_data = scenario_data
         self.console_frame = console_frame
         self.plot_frame = plot_frame
-        self.configure(text = "Compare Scenarios",)
+        self.configure(text = "Plot Scenario Results",)
         self.grid(row=2, column=0,rowspan=1,columnspan=1, sticky='nesw')
         self.grid_columnconfigure(2, weight=1)
 
-        self.loaded_scenarios_A = Label(self, text = "1st Scenario : ")
+        self.loaded_scenarios_A = Label(self, text = "Scenario : ")
         self.loaded_scenarios_A.grid(row=2, column=0, columnspan=1, sticky='e')
         self.scenario_A_combo = Combobox(self,  width=20,state = "readonly")
         self.scenario_A_combo.grid(row=2, column=1,rowspan=1,columnspan=1, sticky='nw',padx=5)
 
-        self.loaded_scenarios_B = Label(self, text = "2nd Scenario : ")
+        self.loaded_scenarios_B = Label(self, text = "Compare with : ")
         self.loaded_scenarios_B.grid(row=3, column=0, columnspan=1, sticky='e')
         self.scenario_B_combo = Combobox(self,  width=20,state = "readonly")
         self.scenario_B_combo.grid(row=3, column=1,rowspan=1,columnspan=1, sticky='nw',padx=5)
@@ -162,19 +163,6 @@ class CompareScenariosFrame(LabelFrame):
         plot = api.create_fig_7_pressure_and_rpc_plots(scenarios, self.plot_frame.fig)
         self.plot_frame.fig.canvas.draw()
 
-    def compare_scenarios_rpc(self):
-        self.plot_frame.table_3_frame.grid_remove()
-        scenarios = api.make_scenario_list(self.first_scenario_name, self.second_scenario_name)
-        scenarios = api.get_scenarios_to_compare(scenarios, self.params)
-        plot = api.create_fig_7_rpc_plots(scenarios, self.plot_frame.fig)
-        self.plot_frame.fig.canvas.draw()
-
-    def compare_scenarios_pressure(self):
-        self.plot_frame.table_3_frame.grid_remove()
-        scenarios = api.make_scenario_list(self.first_scenario_name, self.second_scenario_name)
-        scenarios = api.get_scenarios_to_compare(scenarios, self.params)
-        plot = api.create_fig_7_pressure_plots(scenarios, self.plot_frame.fig)
-        self.plot_frame.fig.canvas.draw()
 
     def compare_scenarios_with_box_plots(self):
         self.plot_frame.table_3_frame.grid_remove()
@@ -185,14 +173,12 @@ class CompareScenariosFrame(LabelFrame):
 
     def on_first_scenario_select(self, event):
         first_selected_scenario = self.scenario_A_combo.get()
-        print(first_selected_scenario)
         self.first_scenario_name  = first_selected_scenario
         self.scenarios_to_compare.append(first_selected_scenario)
     
     def on_second_scenario_select(self, event):
         #note disable this out until first is selected
         second_selected_scenario = self.scenario_B_combo.get()
-        print(second_selected_scenario)
         self.second_scenario_name  = second_selected_scenario
         self.scenarios_to_compare.append(second_selected_scenario)
 
@@ -292,7 +278,7 @@ class LoadScenarioData(LabelFrame):
         #set inital radio button to either v1 or v2
         self.sensor_version_var = IntVar()
         self.sensor_version_var.set(params.get_parameter("sensor_version"))
-        self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 2048 Hz" '\n') 
+        self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " " + str(params.get_parameter("fs")) + " Hz" + '\n') 
         #self.sensor_version_var = params.get_parameter("sensor_version")
         self.v1_radio_button = Radiobutton(self, text="v1", value=1, variable = self.sensor_version_var, command=self.update_sensor_version)
         self.v1_radio_button.grid(row=0,column=1,pady=5, sticky="w")
@@ -377,16 +363,22 @@ class LoadScenarioData(LabelFrame):
         for r in scenario_data["runs"]:
             if(r["name"] == selected_run):
                 for d in r["deployments"]:
-                    self.plot_frame.fig_combo['values'] = (*self.plot_frame.fig_combo['values'], d['name'])
+            
+                    add_label = "(not labeled)"
+                    if d['is_faulty']:
+                        add_label="(faulty)"
+                    elif d['labeled']:
+                        add_label= "(labeled)"
+      
+                    dep = d['name'] + " " + add_label
+                    self.plot_frame.fig_combo['values'] = (*self.plot_frame.fig_combo['values'], dep)
 
     def on_scenario_combo_select(self, event):
          # get sensor version from the radio buttons
-
         selected_scenario = self.scenario_combo.get()
         print("Loading scenario", flush=True)
         
         self.selected_scenario.config(text={selected_scenario})
-
         s_data = api.read_scenario_from_json_file(self.params, selected_scenario)
         self.scenario_data.add_scenario_data(s_data)
         self.run_combo.configure(values=())
@@ -528,34 +520,36 @@ class PlotFrame(LabelFrame):
         
         #self.grid_rowconfigure(1, weight=1)
         self.label = Label(self, text = "Deployments :")
-        self.label.grid(row=0, column=5,rowspan=1,columnspan=1, sticky='ne')
+        self.label.grid(row=0, column=6,rowspan=1,columnspan=1, sticky='ne')
 
         self.fig_combo = Combobox(self, width=50,state = "readonly")
-        self.fig_combo.grid(row=0, column=6,rowspan=1,columnspan=1, sticky='nw',padx=5)
+        self.fig_combo.grid(row=0, column=7,rowspan=1,columnspan=1, sticky='nw',padx=5)
         self.fig_combo.bind("<<ComboboxSelected>>", self.on_fig_combo_select)
 
         self.rowconfigure(1, weight=1)
         self.fig = plt.Figure()
         self.plot_canvas = FigureCanvasTkAgg(self.fig, self)
-        self.plot_canvas.get_tk_widget().grid(row=1,  column=0,columnspan=7, sticky='nsew',padx=5, pady=5)
+        self.plot_canvas.get_tk_widget().grid(row=1,  column=0,columnspan=8, sticky='nsew',padx=5, pady=5)
         self.fig.subplots_adjust( bottom=None,  top=None, wspace=None, hspace=None)
         self.frame_tool = Frame(self)
         self.frame_tool.grid(row=4, rowspan=1, column=0,columnspan=7,sticky='ew')
         self.toolbar = NavigationToolbar2Tk(self.plot_canvas, self.frame_tool)
        
-
         self.next_button = Button(self,text='Next', command=self.load_next_deployment)
-        self.next_button.grid(row=0, column=2,rowspan=1,columnspan=1, sticky='nw')
+        self.next_button.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nw')
 
         self.prev_button = Button(self,text='Prev', command=self.load_prev_deployment)
-        self.prev_button.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nw')
+        self.prev_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='nw')
 
         self.reset_button = Button(self,text='Reset',command=self.reload_deployment_fig)
-        self.reset_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='ne',padx=5)
+        self.reset_button.grid(row=0, column=5,rowspan=1,columnspan=1, sticky='nw',padx=5)
 
         self.mark_done_button = Button(self,text='Mark as Labeled',command=self.mark_deployment_labeled)
-        self.mark_done_button.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='ne',padx=5)
-        #self.reset_button.configure(state ='disable')
+        self.mark_done_button.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='nw',padx=5)
+
+        self.mark_faulty_button = Button(self,text='Mark as Faulty',command=self.mark_deployment_faulty)
+        self.mark_faulty_button.grid(row=0, column=1,rowspan=1,columnspan=1, sticky='nw')
+
 
         self.table_3_button = Button(self, text="compute statistics", command=self.compute_statistics)
         self.table_3_button.grid(row=5, column=0, sticky="w")
@@ -568,7 +562,7 @@ class PlotFrame(LabelFrame):
 
     def compute_statistics(self):
         print("computing statistics", flush=True)
-        sd = self.scenario_data.get_scenario_data()
+        sd = self.scenario_data.get_scenario_data_for_computation()
         if("labeled" in sd.keys()):
             if(sd['labeled']):
                 result = asyncio.run(api.compute_passage_and_normalise_for_a_run(sd['runs'], self.params))
@@ -620,7 +614,7 @@ class PlotFrame(LabelFrame):
         if(prev_index >= 0):
 
             self.fig_combo.current(prev_index)
-            selected_deployment = self.fig_combo.get()
+            selected_deployment = self.fig_combo.get().split(" (")[0]
             self.scenario_data.set_selected_deployment(selected_deployment)
             selected_run = self.scenario_data.get_selected_run()
             scenario_data = self.scenario_data.get_scenario_data()
@@ -629,6 +623,14 @@ class PlotFrame(LabelFrame):
                 if(r["name"] == selected_run):
                     for index, d in enumerate(r["deployments"]):
                         if (d["name"] == selected_deployment):
+
+                            #should be a function
+                            if(d["is_faulty"] == True):
+                                self.mark_faulty_button.configure(text="Undo Faulty")
+                            else:
+                                self.mark_faulty_button.configure(text="Mark as Faulty")
+                            
+
                             deployment_plot = api.create_pressure_plot(d, self.fig)
                             self.scenario_data.set_selected_deployment_index(index)
 
@@ -641,12 +643,12 @@ class PlotFrame(LabelFrame):
     def load_next_deployment(self):
         index = self.fig_combo.current()
         num_deployments = len(self.fig_combo['values'])
-        print(index, num_deployments, flush=True)
 
         if(index < num_deployments-1):
 
             self.fig_combo.current(index+1)
-            selected_deployment = self.fig_combo.get()
+            selected_deployment = self.fig_combo.get().split(" (")[0]
+            print("loading next", selected_deployment)
             self.scenario_data.set_selected_deployment(selected_deployment)
             selected_run = self.scenario_data.get_selected_run()
             scenario_data = self.scenario_data.get_scenario_data()
@@ -655,6 +657,10 @@ class PlotFrame(LabelFrame):
                 if(r["name"] == selected_run):
                     for index, d in enumerate(r["deployments"]):
                         if (d["name"] == selected_deployment):
+                            if(d["is_faulty"] == True):
+                                self.mark_faulty_button.configure(text="Undo Faulty")
+                            else:
+                                self.mark_faulty_button.configure(text="Mark as Faulty")
                             deployment_plot = api.create_pressure_plot(d, self.fig)
                             self.scenario_data.set_selected_deployment_index(index)
 
@@ -663,12 +669,125 @@ class PlotFrame(LabelFrame):
         else:
             self.console_frame.insert_text("No more deployments") 
         
+    def mark_deployment_faulty(self):
+        #label the deployment as faulty 
+        # a faulty deployment will not be used in any further data processing
+        run_name = self.scenario_data.get_selected_run()
+        deployment_index = self.scenario_data.get_selected_deployment_index()
+        scenario = self.scenario_data.get_scenario_data()
+        for r in scenario['runs']:
+            if(r["name"] == run_name):
+                deployment = r["deployments"][deployment_index]
+
+                if(deployment["is_faulty"]):
+
+                    # has been previously marked as faulty so resetting
+                    deployment["is_faulty"] = False
+                    #reset the scenario labelled parameter 
+                    self.mark_faulty_button.configure(text="Mark as Faulty")
+
+                    ##############
+                   # lets try to update the combobox
+                    selected_deployment = self.fig_combo.get().split(' (')[0]
+                    print('from faulty to not labeled',selected_deployment )
+                    all_items = copy.deepcopy(self.fig_combo['values'])
+                    print("current all items", all_items)
+                    new_item_list = []
+                    for idx, item in enumerate(all_items):
+                        print(idx, item)
+                        item_name = item.split(" (")[0]
+                        print(item_name, selected_deployment)
+                        if(item_name == selected_deployment):
+                            new_item_list.append(item_name + " " + "(not labelled)")
+                            self.fig_combo.set(new_item_list[idx])
+                        else:
+                            new_item_list.append(item)
+                    print("altered", new_item_list)
+           
+                    #(*self.plot_frame.fig_combo['values'], dep)
+                    self.fig_combo['values'] = new_item_list
+
+                    ## we need to unlabel the run if it is labeled as done 
+                    ## and also the scenaio
+                    r["labeled"] = False
+                    scenario['labeled'] = False
+
+                else:
+                    ## MARKING AS FAULTY
+                    deployment["is_faulty"] = True
+
+                    if 'pressure_roi' in deployment:
+                        del deployment['pressure_roi']
+
+                    self.mark_faulty_button.configure(text="Undo Faulty")
+
+                    # lets try to update the combobox
+                    selected_deployment = self.fig_combo.get().split(' (')[0]
+      
+                    print("from not labled to faulty")
+                    all_items = copy.deepcopy(self.fig_combo['values'])
+                    print("current all items", all_items)
+                    new_item_list = []
+                    for idx, item in enumerate(all_items):
+                        print(idx, item)
+                        item_name = item.split(" (")[0]
+                        print(item_name, selected_deployment)
+                        if(item_name == selected_deployment):
+                            new_item_list.append(item_name + " " + "(faulty)")
+                            self.fig_combo.set(new_item_list[idx])
+                        else:
+                            new_item_list.append(item)
+                    print("altered", new_item_list)
+                
+                    self.fig_combo['values'] =  new_item_list
+                    
+
+
+                    ############
+
+                    all_deploymnets = all('labeled' in obj and obj['labeled'] is True or obj["is_faulty"] is True for obj in r["deployments"])
+
+                    if(all_deploymnets):
+                        r["labeled"] = True
+                    else:
+                        r["labeled"] = False
+
+                    all_runs = all('labeled' in obj and obj['labeled'] is True for obj in scenario["runs"])
+
+                    if(all_runs):
+                        scenario["labeled"] = True
+                    else:
+                        scenario["labeled"] = False
+
+
+        # recrete the pressure plot?
+        new_plot = api.create_pressure_plot(deployment, self.fig)
+        self.fig.canvas.draw()
+        self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+
+        #revert to original scenario object at loading
+        scenario_to_save = {
+            "name": scenario["name"],
+            "runs": scenario["runs"],
+            "labeled": scenario["labeled"]
+        }
+
+        #write the data
+        write_data = api.write_scenario_to_json_file(scenario_to_save, self.params)
+
+        if(write_data):
+            print("scenario written succcesfully")
+            self.console_frame.clear_console()
+            self.console_frame.insert_text("deployment " + self.scenario_data.get_selected_deployment() + " marked as faulty" + '\n')
+            self.console_frame.insert_text("Scenario " + self.scenario_data.get_scenario_data()["name"] + " saved succesfully" '\n') 
+        
+
+
     def mark_deployment_labeled(self):
         # check 3 points are on the scenarion_data.pressure_roi object
         is_correctly_marked = False
         is_not_empty = True
         roi_object = self.scenario_data.get_pressure_roi()
-        print(roi_object, flush=True)
         if not roi_object:
             is_not_empty = False
         
@@ -699,7 +818,7 @@ class PlotFrame(LabelFrame):
                     print("we have the origanl rois", flush=True)
                     is_correctly_marked = True
        
-                all_deploymnets = all('labeled' in obj and obj['labeled'] is True for obj in r["deployments"])
+                all_deploymnets = all('labeled' in obj and obj['labeled'] is True or obj["is_faulty"] is True for obj in r["deployments"])
 
                 if(all_deploymnets):
                     r["labeled"] = True
@@ -707,14 +826,44 @@ class PlotFrame(LabelFrame):
                     r["labeled"] = False
 
         if(is_correctly_marked):
+           
+
+            #update combobox
+            selected_deployment = self.fig_combo.get().split(' (')[0]
+            print('from not labelled to not labeled',selected_deployment )
+            all_items = copy.deepcopy(self.fig_combo['values'])
+            print("current all items", all_items)
+            new_item_list = []
+            for idx, item in enumerate(all_items):
+                print(idx, item)
+                item_name = item.split(" (")[0]
+                print(item_name, selected_deployment)
+                if(item_name == selected_deployment):
+                    new_item_list.append(item_name + " " + "(labeled)")
+                    self.fig_combo.set(new_item_list[idx])
+                else:
+                    new_item_list.append(item)
+            print("altered", new_item_list)
+
+             # move on
             self.load_next_deployment()
+    
+            #(*self.plot_frame.fig_combo['values'], dep)
+            self.fig_combo['values'] = new_item_list
             #if all the runs are done then label the scenario
             all_runs = all('labeled' in obj and obj['labeled'] is True for obj in scenario["runs"])
             if(all_runs):
                 scenario["labeled"] = True
             else:
                 scenario["labeled"] = False
-            write_data = api.write_scenario_to_json_file(scenario, self.params)
+            
+            scenario_to_save = {
+                "name": scenario["name"],
+                "runs": scenario["runs"],
+                "labeled": scenario["labeled"]
+            }
+
+            write_data = api.write_scenario_to_json_file(scenario_to_save, self.params)
 
             if(write_data):
                 print("scenario written succcesfully")
@@ -736,6 +885,10 @@ class PlotFrame(LabelFrame):
             if(r["name"] == selected_run):
                 for d in r["deployments"]:
                     if (d["name"] == selected_deployment):
+                        if(d["is_faulty"] == True):
+                            self.mark_faulty_button.configure(text="Undo Faulty")
+                        else:
+                            self.mark_faulty_button.configure(text="Mark as Faulty")
                         deployment_plot = api.create_pressure_plot(d, self.fig)
         
         self.fig.canvas.draw()
@@ -756,9 +909,6 @@ class PlotFrame(LabelFrame):
         #over right any previous point
         self.scenario_data.set_pressure_roi_point(roi_point, (int(ind[0]), float(ydata[ind[0]])))
         prev_roi_point = self.scenario_data.get_pressure_roi()
-        print(prev_roi_point)
-        print(self.fig.get_axes())
-        print(event.artist)
 
         self.reload_deployment_fig()
         
@@ -766,7 +916,7 @@ class PlotFrame(LabelFrame):
         indexes = []
         values = []
         for key, value in prev_roi_point.items():
-            print(key)
+   
             labels.append(key)
             indexes.append(xdata[value[0]])
             values.append(value[1])
@@ -778,19 +928,22 @@ class PlotFrame(LabelFrame):
         
     
     def on_fig_combo_select(self, event):
-        selected_deployment = self.fig_combo.get()
+        selected_deployment = self.fig_combo.get().split(' (')[0]
         self.scenario_data.set_selected_deployment(selected_deployment)
         selected_run = self.scenario_data.get_selected_run()
-        print(selected_deployment)
 
         scenario_data = self.scenario_data.get_scenario_data()
 
         for r in scenario_data["runs"]:
             if(r["name"] == selected_run):
                 for index, d in enumerate(r["deployments"]):
+                    print(d["name"], selected_deployment)
                     if (d["name"] == selected_deployment):
                         deployment_plot = api.create_pressure_plot(d, self.fig)
                         self.scenario_data.set_selected_deployment_index(index)
+                        if(d["is_faulty"]):
+                            self.mark_faulty_button.configure(text="Undo Faulty")
+
         self.fig.canvas.draw()
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
         

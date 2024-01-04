@@ -1,4 +1,4 @@
-
+import copy
 class ScenarioData:
 
     def __init__(self):
@@ -39,8 +39,12 @@ class ScenarioData:
 
     def add_scenario_data(self, scenario):
         self.scenario_data = scenario
+
     def get_scenario_data(self):
         return self.scenario_data
+    
+    def get_scenario_data_for_computation(self):
+        return copy.deepcopy(self.scenario_data)
     
     def set_selected_run(self, run):
         self.selected_run = run

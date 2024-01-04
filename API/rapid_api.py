@@ -20,9 +20,12 @@ import matplotlib.pyplot as plt
 
 def make_scenario_list(s1, s2):
     s_list = []
-    s_list.append(s1)
-    s_list.append(s2)
+    if(len(s1)>0):
+        s_list.append(s1)
+    if(len(s2)>0):
+        s_list.append(s2)
     return s_list
+
 def get_total_acclimation_pressure(h, local_atmos_pressure):
     rho = 997.05 #density of water
     g = 9.81 #gravitational acceleration
@@ -157,6 +160,8 @@ def pre_process_file(deployment, data, deployment_number, params):
     name_of_deployment ='Test n°' + str(deployment_number) + ' ' + splitext(deployment)[0]
     deployment_dict["name"] = name_of_deployment
     deployment_dict['sensor_type'] = "FBS" # or BDS
+    deployment_dict['is_faulty'] = False
+    deployment_dict["labeled"] = False
     x_t, y_p = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
@@ -235,7 +240,6 @@ def write_scenario_to_json_file(s, params):
         print(f"Directory '{output_dir}' created successfully in the current working directory!")
     else:
         print(f"Directory '{output_dir}' already exists in the current working directory.")
-
     filename = s["name"]
     with open(working_dir + "/" + output_dir + "/" + filename + ".json", "w") as outfile:
         json.dump(s, outfile)
@@ -441,21 +445,30 @@ def create_fig_6_box_plots(scenarios, fig):
         plot_dict[s["name"]].append(s["consolidated_scenario_data"]['s_nadir_to_tailwater_duration_values'])
         plot_dict[s["name"]].append(s["consolidated_scenario_data"]['s_passage_duration_values'])
     
+    print(plot_dict)
     ticks = ['Injection to Nadir', 'Nadir to Tailwater', 'Total Passage']
-    count = 0
-    for key in plot_dict:
-        if((count % 2) == 0):
-            define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0-0.35, widths=0.4, boxprops=dict(color='#D7191C')), '#D7191C', key) 
-        else:
-            define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0+0.35, widths=0.4, boxprops=dict(color='#2C7BB6')), '#2C7BB6', key)
-        count = count + 1
+
+    if(len(scenarios)>1):
+        count = 0
+        for key in plot_dict:
+            if((count % 2) == 0):
+                define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0-0.35, widths=0.4, boxprops=dict(color='#D7191C')), '#D7191C', key) 
+            else:
+                define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0+0.35, widths=0.4, boxprops=dict(color='#2C7BB6')), '#2C7BB6', key)
+            count = count + 1
+            
+        ax.set_xticks(np.arange(0, len(ticks) * 2, 2), ticks)
+
+    else:
+        #dealing with one
+        print("dealing with 1 scenario")
+        for key in plot_dict:
+            define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0,  boxprops=dict(color='b')), 'b', key) 
+        ax.set_xticks(np.arange(0, len(ticks) * 2, 2), ticks)
         
-    ax.set_xticks(np.arange(0, len(ticks) * 2, 2), ticks)
-
-
 def get_scenarios_to_compare(scenario_list, params):
     scenarios = []
-    if(len(scenario_list) > 1):
+    if(len(scenario_list) > 0):
         for s in scenario_list:
             scenario = read_scenario_from_json_file(params, s)
             result = asyncio.run(compute_passage_and_normalise_for_a_run(scenario['runs'], params))
@@ -483,6 +496,12 @@ def create_pressure_plot(deployment, fig):
             for idx,l in enumerate(labels):
                 ax.annotate(l,(indexes[idx],values[idx]) )
     
+    print(deployment["is_faulty"])
+    if "is_faulty" in deployment and deployment["is_faulty"] == True:
+        ax.text(0.05, 0.95, 'Faulty Deployment', transform=ax.transAxes,
+        verticalalignment='top', horizontalalignment='left',
+        color='red', fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
+
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Pressure (mbar)')
     #ax.legend(('X component','Y component','Z component'))
@@ -587,7 +606,10 @@ async def compute_passage_and_normalise_for_a_run(runs, params):
     for r in runs:
         print("computing passage durations and normalising")
         for d in r['deployments']:
-            deployment_list.append(compute_passage_and_normalise_for_a_deployment(d, params))
+
+            # only include non faulty deployments
+            if(d["is_faulty"] == False):
+                deployment_list.append(compute_passage_and_normalise_for_a_deployment(d, params))
         await asyncio.gather(*deployment_list)   
     return "run"
 
@@ -607,23 +629,24 @@ def consolidate_deployments(deployments, params, h_min, h_max):
     normalised_pressure_matrix = []
     
     for d in deployments:
-        run_names.append(d["name"])
-        nadir_values.append(d['pressure_roi']['Nadir'][1])
-        prior_nadir_max_pressure_interval = d['y_p'][ d['pressure_roi']['Nadir'][0]- params.get_parameter('fs') : d['pressure_roi']['Nadir'][0]]  
-        prc_values.append(max(prior_nadir_max_pressure_interval) - d['pressure_roi']['Nadir'][1])
-        rpc_min_values.append(np.log(get_total_acclimation_pressure(h_min, 1000) / d['pressure_roi']['Nadir'][1]))
-        rpc_max_values.append(np.log(get_total_acclimation_pressure(h_max, 1000) / d['pressure_roi']['Nadir'][1]))
-        
-        injection_to_nadir_duration_values.append(d['passage_durations']['injection_to_nadir_duration'])
-        nadir_to_tailwater_duration_values.append(d['passage_durations']['nadir_to_tailwater_duration'])
-        passage_duration_values.append(d['passage_durations']['passage_duration'])
-        
-        #  stats_data['min_max_pressure']["Minimum"].append(min(fig_data["y_p"]))
-        max_pressure_values.append(max(d['y_p']))
-        min_pressure_values.append(min(d['y_p']))
-        
-        normalised_time_matrix.append(d['normalised_data']['x_t_norm'])
-        normalised_pressure_matrix.append(d['normalised_data']['y_p_resampled'])
+        if(d["is_faulty"] == False):
+            run_names.append(d["name"])
+            nadir_values.append(d['pressure_roi']['Nadir'][1])
+            prior_nadir_max_pressure_interval = d['y_p'][ d['pressure_roi']['Nadir'][0]- params.get_parameter('fs') : d['pressure_roi']['Nadir'][0]]  
+            prc_values.append(max(prior_nadir_max_pressure_interval) - d['pressure_roi']['Nadir'][1])
+            rpc_min_values.append(np.log(get_total_acclimation_pressure(h_min, 1000) / d['pressure_roi']['Nadir'][1]))
+            rpc_max_values.append(np.log(get_total_acclimation_pressure(h_max, 1000) / d['pressure_roi']['Nadir'][1]))
+            
+            injection_to_nadir_duration_values.append(d['passage_durations']['injection_to_nadir_duration'])
+            nadir_to_tailwater_duration_values.append(d['passage_durations']['nadir_to_tailwater_duration'])
+            passage_duration_values.append(d['passage_durations']['passage_duration'])
+            
+            #  stats_data['min_max_pressure']["Minimum"].append(min(fig_data["y_p"]))
+            max_pressure_values.append(max(d['y_p']))
+            min_pressure_values.append(min(d['y_p']))
+            
+            normalised_time_matrix.append(d['normalised_data']['x_t_norm'])
+            normalised_pressure_matrix.append(d['normalised_data']['y_p_resampled'])
     
     consolidated_run_data = {
         "run_names":run_names,
@@ -658,7 +681,7 @@ def consolidate_runs_for_scenario(scenario, params):
     
     for r in scenario['runs']:
         consolidated_run_data = consolidate_deployments(r['deployments'], params, params.get_parameter("h_min"), params.get_parameter("h_max"))
-        r["consolidated_run_data"] = consolidated_run_data
+        #r["consolidated_run_data"] = consolidated_run_data
         
         s_run_names.extend([*consolidated_run_data['run_names']])
         s_nadir_values.extend([*consolidated_run_data['nadir_values']])
@@ -704,7 +727,10 @@ def compute_stats(data):
     _range = _max - _min
     q3, q1 = np.percentile(data, [75 ,25])
     IQR = q3 - q1
-    std = statistics.stdev(data)
+    if(len(data)> 1):
+        std = statistics.stdev(data)
+    else:
+        std = 0
     
     absolute_diff = np.abs(np.array(data) - median)
     mad = np.median(absolute_diff)
