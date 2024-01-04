@@ -3,13 +3,12 @@ from mmap import mmap, ACCESS_READ
 from struct import unpack
 from math import sqrt
 from glob import glob 
-from os import chdir, mkdir,listdir,remove,getcwd, makedirs
+from os import chdir, listdir, makedirs
 from os.path import splitext, isdir, exists
 import numpy as np
 import time
 import asyncio
 import json
-import copy
 import asyncio
 import numpy as np
 from scipy.signal import find_peaks
@@ -40,36 +39,21 @@ def create_data_axes(data, params):
     #create lists of axis data
     x_t  = []
     y_p = []
-    for ind, val in enumerate(data): 
-        
-        if(params.get_parameter("sensor_version")==1):
-            xt = ind / params.get_parameter('fs')
+    for ind, val in enumerate(data):
+        if(params.get_parameter("sensor_version") == 1):
+            xt = ind  * 20 / params.get_parameter('fs') 
             x_t.append(xt)
-            if(len(val) > 2):
-                yp = (val[4]-1000)*0.01
-                y_p.append(yp)
-            else:
-                yp = (val[0]-1000)*0.01
-                y_p.append(yp)
-
         else:
-            x_t.append(val[0])
-            y_p.append(val[4])
-
-        # temps en secondes sur toute la longeur de l'eesai
-        #yp = val[4]#(val[4]-1000)*0.01 
-        #y_p.append(yp) # pression en mH2O - 10m H2O (la pression est nulle à la surface et est équivalente à la profondeur du sensor. A 2m de profondeur la pression vaut 2 mH2O).
-        # add acceleration to this
+            xt = ind  / params.get_parameter('fs')
+            x_t.append(xt)
+        y_p.append(val[4])
     return x_t, y_p
-
 
 # this unpacking is v1 and packet lenght is 11    
 def unpacking(row,params): 
     list_values = []
     index = unpack('>h', bytes(row[0:2]))[0]
-    index = index - 1
     list_values.append(index)
-    
     acc_x = unpack('>h', bytes(row[2:4]))[0]
     acc_x = float(acc_x) / params.get_parameter('acc_gain')
     list_values.append(acc_x)
@@ -89,9 +73,7 @@ def unpacking(row,params):
 
 # this needs clarification for time axis
 def unpacking_v2_format(row,params): 
-    
     list_values = []
-
     # 0
     index = unpack('>I', bytes(row[0:4]))[0]
     index = (index / params.get_parameter("fs")) / params.get_parameter("step_size")
@@ -153,7 +135,9 @@ def get_v1_pressure_results_only(filename, param):
             offset = i * row_size
             mm.seek(offset)  # Move to the starting position of the row
             row = mm.read(row_size)
-            results.append(unpacking(row,param))
+            unpacked_row = unpacking(row,param)
+            #print(unpacked_row)
+            results.append(unpacked_row)
         
         mm.close()
         file.close() 
@@ -253,11 +237,9 @@ def write_scenario_to_json_file(s, params):
         print(f"Directory '{output_dir}' already exists in the current working directory.")
 
     filename = s["name"]
-    # Writing to sample.json
-
     with open(working_dir + "/" + output_dir + "/" + filename + ".json", "w") as outfile:
         json.dump(s, outfile)
-    
+
     return True
 
 
@@ -268,9 +250,6 @@ def read_scenario_from_json_file(params, scenario_name):
         # Reading from json file
         scenario_data = json.load(openfile)
         return scenario_data
-        #print(scenario["name"])
-        #print(len(scenario["runs"][0]["deployments"]))
-        #print(type(scenario))  
 
 def read_roi_points(params):
     with open(params.get_parameter("working_dir") + "/" + params.get_parameter("roi_points_file"), 'r') as openfile:
@@ -310,8 +289,6 @@ def create_mean_diff_plots(scenarios, fig):
     # currently assumes 2 scenarios are compared
     mean_diff = mean_pressures[0] - mean_pressures[1]
     ax[1].scatter(s["consolidated_scenario_data"]['s_normalised_time_matrix'][0], mean_diff, color="red", s=3)
-
-
 
 def create_fig_7_pressure_and_rpc_plots(scenarios, fig):
     fig.clear()
@@ -385,7 +362,6 @@ def create_fig_7_rpc_plots(scenarios, ax1, ax2):
     return ax1, ax2
 
 def create_fig_7_pressure_plots(scenarios, ax1, ax2):
-    #fig.clear()
      ## BOX PLOTS
     plot_dict = {}
     #ax = fig.subplots(1,2)
@@ -503,19 +479,16 @@ def create_pressure_plot(deployment, fig):
             indexes.append(deployment['x_t'][value[0]])
             values.append(value[1])
             ax.scatter(indexes, values)
+            print("nadir", indexes, values)
             for idx,l in enumerate(labels):
                 ax.annotate(l,(indexes[idx],values[idx]) )
     
-    ax.set_xlabel('Time ')
-    ax.set_ylabel('Pressure')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Pressure (mbar)')
     #ax.legend(('X component','Y component','Z component'))
     ax.grid(True)
     
     #return ax
-
-
-
-### 
 
 def detect_key_pressure_points(x_t, y_p, fs):    
     nadir_idx = y_p.index(min(y_p))

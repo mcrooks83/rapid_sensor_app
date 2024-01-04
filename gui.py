@@ -354,6 +354,7 @@ class LoadScenarioData(LabelFrame):
             self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 2048 Hz" '\n') 
             self.params.update_parameter("sensor_version", self.sensor_version_var.get())
             self.params.update_parameter("fs", 2048)
+            self.params.update_parameter("fs_p", 100)
             self.params.update_parameter("packet_length", 11)
         elif(self.sensor_version_var.get() == 2):
             self.console_frame.clear_console()
@@ -361,6 +362,7 @@ class LoadScenarioData(LabelFrame):
             self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 100 Hz" '\n') 
             self.params.update_parameter("sensor_version", self.sensor_version_var.get())
             self.params.update_parameter("fs", 100)
+            self.params.update_parameter("fs_p", 100)
             self.params.update_parameter("packet_length", 29)
 
 
@@ -426,6 +428,7 @@ class LoadScenarioData(LabelFrame):
                 else:
                     scenario_data = data
                     print("loading completed")
+                    self.console_frame.insert_text(scenario_data["name"] + " loading complete" '\n') 
                     self.stop_loading_progress()
                     #self.pbar_ind.grid_remove()
                     self.pbar_ind.lower()

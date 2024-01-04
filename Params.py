@@ -26,6 +26,7 @@ class Parameters:
         #v2 default
         self.parameters["sensor_version"] = 2
         self.parameters['fs'] = 100 #sample rate in Hz
+        self.parameters['fs_p'] = 100 #sample rate of pressure sensor in Hz
         self.parameters['fs_hg'] = 2000
         self.parameters['packet_length'] = 29 #size of bytes per line
         self.parameters['step_size']  = 20
