@@ -12,6 +12,8 @@ annote the depoyment graph with faulty -> test
 update the drop down with deployments that are labeled and not -> test
 allow box plots etc for single scenario -> test
 
+deal with acceleration 
+
 
 # attention
 add functions to (to a class) to retrieve individual deployments from a scenario
