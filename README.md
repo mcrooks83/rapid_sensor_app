@@ -20,3 +20,5 @@ explort plot data buttons
 add functions to (to a class) to retrieve individual deployments from a scenario
 need a better represenation of the data model to allow for easier read / write operations
 places where functions should be produced
+
+# packaging 
