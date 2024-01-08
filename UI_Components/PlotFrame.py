@@ -44,7 +44,7 @@ class PlotFrame(LabelFrame):
         self.prev_button = Button(self,text='Prev', command=self.load_prev_deployment)
         self.prev_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='nw')
 
-        self.reset_button = Button(self,text='Reset',command=self.reload_deployment_fig)
+        self.reset_button = Button(self,text='Reset',command=self.reset_deployment_fig)
         self.reset_button.grid(row=0, column=5,rowspan=1,columnspan=1, sticky='nw',padx=5)
 
         self.mark_done_button = Button(self,text='Mark as Labeled',command=self.mark_deployment_labeled)
@@ -134,9 +134,9 @@ class PlotFrame(LabelFrame):
 
                             deployment_plot = api.create_pressure_plot(d, self.fig)
                             self.scenario_data.set_selected_deployment_index(index)
-
-            self.fig.canvas.draw()
             self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+            self.fig.canvas.draw()
+
         else:
             self.console_frame.insert_text("No more deployments" + "\n") 
 
@@ -358,11 +358,31 @@ class PlotFrame(LabelFrame):
         
         self.fig.canvas.draw()
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+    
+    def reset_deployment_fig(self):
+        selected_deployment = deployment = self.scenario_data.get_selected_deployment()
+        scenario_data = self.scenario_data.get_scenario_data()
+        selected_run = self.scenario_data.get_selected_run()
+
+        self.scenario_data.clear_pressure_roi()
+        for r in scenario_data["runs"]:
+            if(r["name"] == selected_run):
+                for d in r["deployments"]:
+                    if (d["name"] == selected_deployment):
+                        if "is_faulty" in d:
+                            d["is_faulty"] == False
+                            self.mark_faulty_button.configure(text="Mark as Faulty")
+                        deployment_plot = api.create_pressure_plot(d, self.fig)
+        
+        self.fig.canvas.draw()
+        self.plot_canvas.mpl_connect('pick_event', self.on_pick)
 
     
     def on_pick(self, event):
+        #print(event)
         #self.fig.get_axes()[0].scatter.remove()
         line = event.artist
+        print(line)
         if not len(event.ind):  #check the index is valid
             return True
         ind = event.ind[0]
@@ -385,9 +405,9 @@ class PlotFrame(LabelFrame):
             labels.append(key)
             indexes.append(xdata[value[0]])
             values.append(value[1])
-            self.fig.get_axes()[0].scatter(indexes, values)
+            self.fig.get_axes()[1].scatter(indexes, values)
             for idx,l in enumerate(labels):
-                self.fig.get_axes()[0].annotate(l,(indexes[idx],values[idx]) )
+                self.fig.get_axes()[1].annotate(l,(indexes[idx],values[idx]) )
 
         self.fig.canvas.draw()         
         

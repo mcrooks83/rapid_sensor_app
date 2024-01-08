@@ -11,13 +11,10 @@ import asyncio
 import json
 import asyncio
 import numpy as np
-from scipy.signal import find_peaks
 from scipy.signal import resample
 import statistics
-import matplotlib.pyplot as plt
 
 ### HELPERS ###
-
 def make_scenario_list(s1, s2):
     s_list = []
     if(len(s1)>0):
@@ -35,22 +32,23 @@ def get_total_acclimation_pressure(h, local_atmos_pressure):
     return total_acclimation_pressure
 
 #### LOAD SCENARIO ####
-
 # this function will need to be ammended as more sensor outputs come online
 # and will differ between v1 and v2
 def create_data_axes(data, params):
     #create lists of axis data
     x_t  = []
     y_p = []
+    a_mag = []
     for ind, val in enumerate(data):
         if(params.get_parameter("sensor_version") == 1):
             xt = ind  * 20 / params.get_parameter('fs') 
             x_t.append(xt)
+            a_mag.append(val[-1])
         else:
             xt = ind  / params.get_parameter('fs')
             x_t.append(xt)
         y_p.append(val[4])
-    return x_t, y_p
+    return x_t, y_p, a_mag
 
 # this unpacking is v1 and packet lenght is 11    
 def unpacking(row,params): 
@@ -73,7 +71,6 @@ def unpacking(row,params):
     list_values.append(amag)
     return list_values
 
-
 # this needs clarification for time axis
 def unpacking_v2_format(row,params): 
     list_values = []
@@ -81,7 +78,6 @@ def unpacking_v2_format(row,params):
     index = unpack('>I', bytes(row[0:4]))[0]
     index = (index / params.get_parameter("fs")) / params.get_parameter("step_size")
     list_values.append(index)
-    
     #1
     acc_x = unpack('>h', bytes(row[4:6]))[0]
     acc_x = float(acc_x) / params.get_parameter('acc_gain')
@@ -123,28 +119,53 @@ def get_results(filename, params):
         file.close() 
     return results
 
+
+###### Doing 
 def get_v1_pressure_results_only(filename, param):
-    results = []
+    results = []            # holds every 20th row
     with open(filename,'rb') as file:
+        print("reading v1 data")
         mm = mmap(file.fileno(), 0, access=ACCESS_READ)
+        accel_max_window = param.get_parameter("accel_max_window")
+        prior_rows_to_read = int(accel_max_window / 2)
         row_size = param.get_parameter("packet_length") # should be 11
-       
         num_rows = len(mm) // row_size
-        # only read multiples of 20
-        #results = [unpacking(row,param) for row in read_row(mm,param)]
-        
         # loop over every 20th row (2khz - 100hz ratio)
-        for i in range(0, num_rows, 20):
-            offset = i * row_size
-            mm.seek(offset)  # Move to the starting position of the row
-            row = mm.read(row_size)
-            unpacked_row = unpacking(row,param)
-            #print(unpacked_row)
+        for i in range(0, num_rows, accel_max_window):
+            offset = i * row_size                   # offset for each 20th row
+            tmp_max_accel_mag = 0
+            start_offset = max(0, offset - prior_rows_to_read)
+            
+            mm.seek(offset)
+            row = mm.read(row_size)                 # read single row
+            
+            unpacked_row = unpacking(row,param)     # unpack single row
+           
+            if(start_offset == 0):
+                tmp_max_accel_mag = unpacked_row[-1]
+            else:
+                mm.seek(start_offset)
+                # reads 20 * 11 bytes for 20 rows
+                data_block = mm.read(accel_max_window*row_size)
+                
+                # process blocks of 11 bytes
+                for i in range(accel_max_window):
+                    row_data = data_block[i * 11: (i + 1) * 11]
+                    #print(row_data)
+                    if(len(row_data) == row_size):
+                        unpack_for_accel = unpacking(row_data,param)
+                        if(unpack_for_accel[-1]>tmp_max_accel_mag):
+                            tmp_max_accel_mag = unpack_for_accel[-1]
+            
+            unpacked_row.append(tmp_max_accel_mag)   
             results.append(unpacked_row)
         
         mm.close()
         file.close() 
     return results
+
+
+#######
 
 def get_results_v2_format(filename, param):
     with open(filename,'rb') as file:
@@ -155,16 +176,16 @@ def get_results_v2_format(filename, param):
     return results
 
 def pre_process_file(deployment, data, deployment_number, params):
-    #print("processing: ", deployment)
     deployment_dict = {}
     name_of_deployment ='Test n°' + str(deployment_number) + ' ' + splitext(deployment)[0]
     deployment_dict["name"] = name_of_deployment
     deployment_dict['sensor_type'] = "FBS" # or BDS
     deployment_dict['is_faulty'] = False
     deployment_dict["labeled"] = False
-    x_t, y_p = create_data_axes(data, params)
+    x_t, y_p, a_mag = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
+    deployment_dict["a_mag"] = a_mag
     
     return deployment_dict
 
@@ -246,7 +267,6 @@ def write_scenario_to_json_file(s, params):
 
     return True
 
-
 def read_scenario_from_json_file(params, scenario_name):
     # Opening JSON file
     with open(params.get_parameter("working_dir") + "/" + params.get_parameter("output_dir_name") + "/" + scenario_name + ".json", 'r') as openfile:
@@ -271,12 +291,9 @@ def define_box_properties(ax, plot_name, color_code, label):
 def mean_scenario_pressure(s):
     return np.mean(s["consolidated_scenario_data"]['s_normalised_pressure_matrix'], axis=0)
 
-
 def create_mean_diff_plots(scenarios, fig):
     fig.clear()
-    plot_dict = {}
     ax = fig.subplots(2,1)
-
     count = 0
     mean_pressures = []
    
@@ -429,7 +446,6 @@ def create_fig_7_pressure_plots(scenarios, ax1, ax2):
 
     return ax1, ax2
 
-
 def create_fig_6_box_plots(scenarios, fig):
     fig.clear()  
     plot_dict = {}
@@ -445,7 +461,6 @@ def create_fig_6_box_plots(scenarios, fig):
         plot_dict[s["name"]].append(s["consolidated_scenario_data"]['s_nadir_to_tailwater_duration_values'])
         plot_dict[s["name"]].append(s["consolidated_scenario_data"]['s_passage_duration_values'])
     
-    print(plot_dict)
     ticks = ['Injection to Nadir', 'Nadir to Tailwater', 'Total Passage']
 
     if(len(scenarios)>1):
@@ -476,12 +491,22 @@ def get_scenarios_to_compare(scenario_list, params):
             scenarios.append(scenario)
     return scenarios
 
-
 def create_pressure_plot(deployment, fig):
     fig.clear()
+
     ax = fig.subplots()
     ax.set_title(deployment["name"])
-    ax.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True, pickradius=1)
+
+    
+
+    if("a_mag" in  deployment):
+        ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
+        ax.set_ylabel('Accleation Magntidue')
+        ax.legend(loc='upper right')
+
+    ax2 = ax.twinx()
+    ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True, pickradius=1, label="pressure")
+    
 
     if "pressure_roi" in deployment:
         labels = []
@@ -491,54 +516,20 @@ def create_pressure_plot(deployment, fig):
             labels.append(key)
             indexes.append(deployment['x_t'][value[0]])
             values.append(value[1])
-            ax.scatter(indexes, values)
-            print("nadir", indexes, values)
+            ax2.scatter(indexes, values)
             for idx,l in enumerate(labels):
-                ax.annotate(l,(indexes[idx],values[idx]) )
+                ax2.annotate(l,(indexes[idx],values[idx]) )
     
-    print(deployment["is_faulty"])
     if "is_faulty" in deployment and deployment["is_faulty"] == True:
-        ax.text(0.05, 0.95, 'Faulty Deployment', transform=ax.transAxes,
+        ax2.text(0.05, 0.95, 'Faulty Deployment', transform=ax.transAxes,
         verticalalignment='top', horizontalalignment='left',
         color='red', fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
 
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Pressure (mbar)')
-    #ax.legend(('X component','Y component','Z component'))
+    ax2.set_ylabel('Pressure (mbar)')
+    ax2.legend(loc='upper left')
+
     ax.grid(True)
-    
-    #return ax
-
-def detect_key_pressure_points(x_t, y_p, fs):    
-    nadir_idx = y_p.index(min(y_p))
-    peaks, _ = find_peaks(y_p, prominence=100)
-    print("peaks", peaks)
-    injection_idx = peaks[0]
-    
-    #1010 mbar ? 
-    tailwater_idx = peaks[-1]+(fs*200)
-    if(nadir_idx > injection_idx):
-        print("good")
-    else:
-        print("no good")
-        print("I: ",injection_idx, "N: ", nadir_idx)
-        nadir_idx = nadir_idx + (fs*500)
-        print("I: ",injection_idx, "N: ", nadir_idx)
-    
-    pressure_roi = {
-        "injection": (injection_idx, y_p[injection_idx]),
-        "nadir": (nadir_idx, y_p[nadir_idx]),
-        "tailwater": (tailwater_idx, y_p[tailwater_idx]),
-    }
-    print(pressure_roi)
-    
-    return pressure_roi
-
-def pressure_roi_for_runs(deployments, params):
-    for d in deployments:
-        pressure_roi = detect_key_pressure_points(d['x_t'], d['y_p'], params.get_parameter('fs') )
-        d['pressure_roi'] = pressure_roi
-
 
 ## Compute passage and normalise the data 
 def compute_passage_durations(deployment_roi, sampling_frequency):
@@ -613,7 +604,6 @@ async def compute_passage_and_normalise_for_a_run(runs, params):
         await asyncio.gather(*deployment_list)   
     return "run"
 
-
 def consolidate_deployments(deployments, params, h_min, h_max):
     run_names = []
     nadir_values = []
@@ -681,8 +671,7 @@ def consolidate_runs_for_scenario(scenario, params):
     
     for r in scenario['runs']:
         consolidated_run_data = consolidate_deployments(r['deployments'], params, params.get_parameter("h_min"), params.get_parameter("h_max"))
-        #r["consolidated_run_data"] = consolidated_run_data
-        
+
         s_run_names.extend([*consolidated_run_data['run_names']])
         s_nadir_values.extend([*consolidated_run_data['nadir_values']])
         s_prc_values.extend([*consolidated_run_data['prc_values']])

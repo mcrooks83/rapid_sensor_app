@@ -74,7 +74,6 @@ class LoadScenarioData(LabelFrame):
         
         self.pbar_ind = Progressbar(self.progress_bar_frame, orient="horizontal",   mode="indeterminate", )
         self.pbar_ind.grid(row=7, column=0, columnspan=7, sticky="news") #sticky="ewns")
-        #self.pbar_ind.grid_remove()
         self.blank = Frame(self.progress_bar_frame)
         self.blank.grid(row=7, column=0, columnspan=7, sticky="news")
         self.result_queue = multiprocessing.Queue()
@@ -140,6 +139,7 @@ class LoadScenarioData(LabelFrame):
         self.console_frame.insert_text("Loaded " + s_data["name"] + "" '\n') 
 
     def start_loading_progress(self):
+        print("progressing...")
         self.pbar_ind.start()
 
     def stop_loading_progress(self):
@@ -147,31 +147,21 @@ class LoadScenarioData(LabelFrame):
         self.pbar_ind.stop()
         self.pbar_ind.config(mode="indeterminate")
 
-    
-    def load_scenario(self):
-        print("loading scenario")
-        self.console_frame.insert_text("Loading scenario, please wait ..." + '\n') 
-        self.pbar_ind.tkraise()
-        self.start_loading_progress()
-        sensor_version = self.sensor_version_var.get()
-        print("sensor version:", sensor_version, flush=True)           
-        
-        def check_process_result(process, result_queue, deployment_done_queue):
+    def check_process_result(self, process, result_queue, deployment_done_queue):
+            
             try:
                 
-                data = result_queue.get(block=True)
+                data = result_queue.get(block=False)
 
                 if "d" in data:
                     print("processed deployment", data["d"])
                     self.console_frame.insert_text("processed deployment " + data["d"] + '\n') 
-                    self.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
-
+                    self.after(1, self.check_process_result, process, self.result_queue, self.deployment_done_queue)
                 else:
                     scenario_data = data
                     print("loading completed")
                     self.console_frame.insert_text(scenario_data["name"] + " loading complete" '\n') 
                     self.stop_loading_progress()
-                    #self.pbar_ind.grid_remove()
                     self.pbar_ind.lower()
 
                     if scenario_data:
@@ -186,17 +176,30 @@ class LoadScenarioData(LabelFrame):
                             self.console_frame.insert_text("Scenario " + scenario_data["name"] + " saved succesfully" '\n') 
                         #add to combox
                         if scenario_data["name"] not in self.scenario_combo['values']:
-                            self.scenario_combo['values'] += (scenario_data["name"],)
+                            self.scenario_combo['values'] += (scenario_data["name"])
                 
             except queue.Empty:
                 print("EMPTY")
                 # Handle the case where the queue is empty
-                self.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
+                self.after(1, self.check_process_result, process, self.result_queue, self.deployment_done_queue)
+
+    
+    def load_scenario(self):
+        print("loading scenario")
+        self.pbar_ind.tkraise()
+        self.pbar_ind.start()
+        #self.start_loading_progress()
+
+        self.console_frame.insert_text("Loading scenario, please wait ..." + '\n') 
+        sensor_version = self.sensor_version_var.get()
+        print("sensor version:", sensor_version, flush=True)           
 
         process = multiprocessing.Process(target=api.load_scenario_from_directory, args=[self.params, self.result_queue, self.deployment_done_queue])
         process.start()
            
-        self.master.after(1, check_process_result, process, self.result_queue, self.deployment_done_queue)
+        self.after(1, self.check_process_result, process, self.result_queue, self.deployment_done_queue)
+
+
 
     def select_dir(self):
         select_folder_dir = fd.askdirectory(title='Open data directory',initialdir=self.params.get_parameter('folder_dir'))

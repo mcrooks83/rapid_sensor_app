@@ -9,6 +9,7 @@ from UI_Components.AppCanvas import AppCanvas
 import Data_Classes.Params as p
 import Data_Classes.ScenarioData as sd
 
+
 #### Main UI using Tkinter ###
 
 class MainApplication(Tk):
