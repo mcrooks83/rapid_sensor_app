@@ -1,6 +1,7 @@
 from tkinter import Tk
 ## imports
-from os import listdir, getcwd
+from os import listdir, getcwd, makedirs
+from os.path import exists
 
 # UI components
 from UI_Components.Title import Title
@@ -23,8 +24,14 @@ class MainApplication(Tk):
         working_dir = getcwd()
         params.update_parameter("working_dir", working_dir)
 
+        #current working directory
+        output_dir = params.get_parameter('output_dir_name') 
+        if not exists(output_dir):
+            makedirs(output_dir)
+            print(f"Directory '{output_dir}' created successfully in the current working directory!")
+
         #load already loaded scenarios
-        path_to_scenarios = working_dir + "/" + params.get_parameter('output_dir_name')  + "/"
+        path_to_scenarios = working_dir + "/" + output_dir  + "/"
         scenario_files = [pos_json.split(".")[0] for pos_json in listdir(path_to_scenarios) if pos_json.endswith('.json')]
         scenario_data.add_loaded_scenarios(scenario_files)
  
@@ -41,6 +48,7 @@ class MainApplication(Tk):
 
         self.title_label = Title(self, text="Rapid Sensor Analysis")
         self.pw = AppCanvas(self, params, scenario_data)
+
        
 
 if __name__ == "__main__":

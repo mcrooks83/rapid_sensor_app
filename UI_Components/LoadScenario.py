@@ -179,7 +179,7 @@ class LoadScenarioData(LabelFrame):
                             self.scenario_combo['values'] += (scenario_data["name"])
                 
             except queue.Empty:
-                print("EMPTY")
+                #print("EMPTY")
                 # Handle the case where the queue is empty
                 self.after(1, self.check_process_result, process, self.result_queue, self.deployment_done_queue)
 
