@@ -175,8 +175,9 @@ class LoadScenarioData(LabelFrame):
                             #self.console_frame.clear_console()
                             self.console_frame.insert_text("Scenario " + scenario_data["name"] + " saved succesfully" '\n') 
                         #add to combox
+                        #new_values = (*current_values, new_value)
                         if scenario_data["name"] not in self.scenario_combo['values']:
-                            self.scenario_combo['values'] += (scenario_data["name"])
+                            self.scenario_combo['values'] =  (*self.scenario_combo['values'], scenario_data["name"])
                 
             except queue.Empty:
                 #print("EMPTY")

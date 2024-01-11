@@ -185,7 +185,8 @@ def pre_process_file(deployment, data, deployment_number, params):
     x_t, y_p, a_mag = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
-    deployment_dict["a_mag"] = a_mag
+    if(len(a_mag)>0):
+        deployment_dict["a_mag"] = a_mag
     
     return deployment_dict
 
@@ -500,6 +501,7 @@ def create_pressure_plot(deployment, fig):
     
 
     if("a_mag" in  deployment):
+        print("noooope")
         ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
         ax.set_ylabel('Accleation Magntidue')
         ax.legend(loc='upper right')
