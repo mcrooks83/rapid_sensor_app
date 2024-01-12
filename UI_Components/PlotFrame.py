@@ -12,9 +12,6 @@ import copy
 
 from API import rapid_api as api
 
-
-
-
 class PlotFrame(LabelFrame):
     def __init__(self, master,console_frame, params, scenario_data, *args, **kwargs):
         super().__init__(master, *args, **kwargs)

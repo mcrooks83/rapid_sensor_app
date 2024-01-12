@@ -522,8 +522,10 @@ def create_pressure_plot(deployment, fig):
             ax2.annotate(l,(indexes[idx],values[idx]) )
         print(labels)
     if "is_faulty" in deployment and deployment["is_faulty"] == True:
-        ax2.text(0.05, 0.95, 'Faulty Deployment', transform=ax.transAxes,
-        verticalalignment='top', horizontalalignment='left',
+        ax2.text(0.5, 0.95, 'Faulty Deployment', ha='center', va='top', transform=ax.transAxes,
+
+        #ax2.text(0.1, 0.95, 'Faulty Deployment', transform=ax.transAxes,
+       
         color='red', fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
 
     ax.set_xlabel('Time (s)')
