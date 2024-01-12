@@ -56,13 +56,13 @@ def unpacking(row,params):
     index = unpack('>h', bytes(row[0:2]))[0]
     list_values.append(index)
     acc_x = unpack('>h', bytes(row[2:4]))[0]
-    acc_x = float(acc_x) / params.get_parameter('acc_gain')
+    acc_x = float(acc_x) #/ params.get_parameter('acc_gain')
     list_values.append(acc_x)
     acc_y = unpack('>h', bytes(row[4:6]))[0]
-    acc_y = acc_y / params.get_parameter('acc_gain')
+    acc_y = acc_y #/ params.get_parameter('acc_gain')
     list_values.append(acc_y)
     acc_z = unpack('>h', bytes(row[6:8]))[0]
-    acc_z = acc_z / params.get_parameter('acc_gain')
+    acc_z = acc_z #/ params.get_parameter('acc_gain')
     list_values.append(acc_z)
     pressure = unpack('>h', bytes(row[8:10]))[0] 
     pressure = pressure / params.get_parameter('p_gain')
@@ -182,6 +182,7 @@ def pre_process_file(deployment, data, deployment_number, params):
     deployment_dict['sensor_type'] = "FBS" # or BDS
     deployment_dict['is_faulty'] = False
     deployment_dict["labeled"] = False
+    deployment_dict["pressure_roi"] = {} # empty set of pressure labels
     x_t, y_p, a_mag = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
@@ -494,20 +495,17 @@ def get_scenarios_to_compare(scenario_list, params):
 
 def create_pressure_plot(deployment, fig):
     fig.clear()
-
     ax = fig.subplots()
     ax.set_title(deployment["name"])
 
-    
-
     if("a_mag" in  deployment):
-        print("noooope")
         ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
         ax.set_ylabel('Accleation Magntidue')
         ax.legend(loc='upper right')
+     
 
     ax2 = ax.twinx()
-    ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True, pickradius=1, label="pressure")
+    ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True,  pickradius=1, label="pressure")
     
 
     if "pressure_roi" in deployment:
@@ -515,13 +513,14 @@ def create_pressure_plot(deployment, fig):
         indexes = []
         values = []
         for key, value in deployment["pressure_roi"].items():
+            print("keys",key)
             labels.append(key)
             indexes.append(deployment['x_t'][value[0]])
             values.append(value[1])
-            ax2.scatter(indexes, values)
-            for idx,l in enumerate(labels):
-                ax2.annotate(l,(indexes[idx],values[idx]) )
-    
+        ax2.scatter(indexes, values)
+        for idx,l in enumerate(labels):
+            ax2.annotate(l,(indexes[idx],values[idx]) )
+        print(labels)
     if "is_faulty" in deployment and deployment["is_faulty"] == True:
         ax2.text(0.05, 0.95, 'Faulty Deployment', transform=ax.transAxes,
         verticalalignment='top', horizontalalignment='left',

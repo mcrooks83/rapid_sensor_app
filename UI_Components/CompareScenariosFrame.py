@@ -38,20 +38,22 @@ class CompareScenariosFrame(LabelFrame):
 
         self.compare_button_frame = Frame(self)
         self.compare_button_frame.grid(row=5, column=0, columnspan=2)
-        self.compare_scenarios = Button(self.compare_button_frame,text='Box Plots', command=self.compare_scenarios_with_box_plots)
-        self.compare_scenarios.grid(row=5, column=0,sticky='ws',pady=5 )
-        self.compare_scenarios = Button(self.compare_button_frame,text='Pressure / PRC Plots', command=self.compare_scenarios_pressure_and_rpc)
-        self.compare_scenarios.grid(row=5, column=1,sticky='ws',pady=5 )
-        self.compare_scenarios = Button(self.compare_button_frame,text='Mean / Diff', command=self.compare_scenarios_mean_diff)
-        self.compare_scenarios.grid(row=5, column=2,sticky='ws',pady=5 )
+        self.compare_scenarios_box_plot_btn = Button(self.compare_button_frame,text='Box Plots', command=self.compare_scenarios_with_box_plots)
+        self.compare_scenarios_box_plot_btn.grid(row=5, column=0,sticky='ws',pady=5 )
+        self.compare_scenarios_pressure_rpc_btn = Button(self.compare_button_frame,text='Pressure / PRC Plots', command=self.compare_scenarios_pressure_and_rpc)
+        self.compare_scenarios_pressure_rpc_btn.grid(row=5, column=1,sticky='ws',pady=5 )
+        self.compare_scenarios_mean_diff_btn = Button(self.compare_button_frame,text='Mean / Diff', command=self.compare_scenarios_mean_diff)
+        self.compare_scenarios_mean_diff_btn.configure(state="disabled")
+        self.compare_scenarios_mean_diff_btn.grid(row=5, column=2,sticky='ws',pady=5 )
 
 
     def compare_scenarios_mean_diff(self):
-        self.plot_frame.table_3_frame.grid_remove()
-        scenarios = api.make_scenario_list(self.first_scenario_name, self.second_scenario_name)
-        scenarios = api.get_scenarios_to_compare(scenarios, self.params)
-        plot = api.create_mean_diff_plots(scenarios, self.plot_frame.fig)
-        self.plot_frame.fig.canvas.draw()
+        if(self.second_scenario_name and self.first_scenario_name):
+            self.plot_frame.table_3_frame.grid_remove()
+            scenarios = api.make_scenario_list(self.first_scenario_name, self.second_scenario_name)
+            scenarios = api.get_scenarios_to_compare(scenarios, self.params)
+            plot = api.create_mean_diff_plots(scenarios, self.plot_frame.fig)
+            self.plot_frame.fig.canvas.draw()
 
     def compare_scenarios_pressure_and_rpc(self):
         self.plot_frame.table_3_frame.grid_remove()
@@ -78,3 +80,5 @@ class CompareScenariosFrame(LabelFrame):
         second_selected_scenario = self.scenario_B_combo.get()
         self.second_scenario_name  = second_selected_scenario
         self.scenarios_to_compare.append(second_selected_scenario)
+        if(len(self.scenarios_to_compare) > 1):
+            self.compare_scenarios_mean_diff_btn.configure(state="active")

@@ -69,11 +69,11 @@ class LabelROIFrame(LabelFrame):
     def select_roi_point(self):
         roi_selected = self.roi_var.get()
         if(roi_selected == 0):
-            print("Injection")
+            #print("Injection")
             self.scenario_data.set_selected_roi_point("Injection")
         elif(roi_selected == 1):
-            print("Nadir")
+            #print("Nadir")
             self.scenario_data.set_selected_roi_point("Nadir")
         elif(roi_selected == 2):
-            print("Tailwater")
+            #print("Tailwater")
             self.scenario_data.set_selected_roi_point("Tailwater")

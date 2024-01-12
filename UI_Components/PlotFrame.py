@@ -2,7 +2,7 @@ from tkinter import Label,LabelFrame,Button,Frame
 from tkinter.ttk import Combobox
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 from UI_Components.Table3 import Table3
 
@@ -11,6 +11,9 @@ import json
 import copy
 
 from API import rapid_api as api
+
+
+
 
 class PlotFrame(LabelFrame):
     def __init__(self, master,console_frame, params, scenario_data, *args, **kwargs):
@@ -37,6 +40,7 @@ class PlotFrame(LabelFrame):
         self.frame_tool = Frame(self)
         self.frame_tool.grid(row=4, rowspan=1, column=0,columnspan=7,sticky='ew')
         self.toolbar = NavigationToolbar2Tk(self.plot_canvas, self.frame_tool)
+        #self.toolbar.update()
        
         self.next_button = Button(self,text='Next', command=self.load_next_deployment)
         self.next_button.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nw')
@@ -134,8 +138,11 @@ class PlotFrame(LabelFrame):
 
                             deployment_plot = api.create_pressure_plot(d, self.fig)
                             self.scenario_data.set_selected_deployment_index(index)
+            
             self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+
             self.fig.canvas.draw()
+            
 
         else:
             self.console_frame.insert_text("No more deployments" + "\n") 
@@ -162,8 +169,13 @@ class PlotFrame(LabelFrame):
                             deployment_plot = api.create_pressure_plot(d, self.fig)
                             self.scenario_data.set_selected_deployment_index(index)
 
-            self.fig.canvas.draw()
+            
             self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+            self.fig.canvas.draw()
+            for ax in self.fig.get_axes():
+                ax.autoscale(False)
+            
+
         else:
             self.console_frame.insert_text("No more deployments") 
         
@@ -239,8 +251,11 @@ class PlotFrame(LabelFrame):
 
         # recrete the pressure plot?
         new_plot = api.create_pressure_plot(deployment, self.fig)
-        self.fig.canvas.draw()
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+
+        self.fig.canvas.draw()
+        for ax in self.fig.get_axes():
+                ax.autoscale(False)
 
         #revert to original scenario object at loading
         scenario_to_save = {
@@ -307,10 +322,13 @@ class PlotFrame(LabelFrame):
                 item_name = item.split(" (")[0]
                 if(item_name == selected_deployment):
                     new_item_list.append(item_name + " " + "(labeled)")
+              
                     self.fig_combo.set(new_item_list[idx])
                 else:
                     new_item_list.append(item)
+            self.fig_combo['values'] =  new_item_list
             # move on
+            
             self.load_next_deployment()
     
             #(*self.plot_frame.fig_combo['values'], dep)
@@ -343,7 +361,7 @@ class PlotFrame(LabelFrame):
             self.console_frame.insert_text("Deployment has not been correctly labeled") 
 
     def reload_deployment_fig(self):
-        selected_deployment = deployment = self.scenario_data.get_selected_deployment()
+        selected_deployment = self.scenario_data.get_selected_deployment()
         scenario_data = self.scenario_data.get_scenario_data()
         selected_run = self.scenario_data.get_selected_run()
         for r in scenario_data["runs"]:
@@ -356,8 +374,12 @@ class PlotFrame(LabelFrame):
                             self.mark_faulty_button.configure(text="Mark as Faulty")
                         deployment_plot = api.create_pressure_plot(d, self.fig)
         
-        self.fig.canvas.draw()
+        
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+
+        self.fig.canvas.draw()
+        for ax in self.fig.get_axes():
+                ax.autoscale(False)
     
     def reset_deployment_fig(self):
         selected_deployment = deployment = self.scenario_data.get_selected_deployment()
@@ -374,15 +396,16 @@ class PlotFrame(LabelFrame):
                             self.mark_faulty_button.configure(text="Mark as Faulty")
                         deployment_plot = api.create_pressure_plot(d, self.fig)
         
-        self.fig.canvas.draw()
+        
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
 
-    
-    def on_pick(self, event):
-        #print(event)
-        #self.fig.get_axes()[0].scatter.remove()
+        self.fig.canvas.draw()
+        for ax in self.fig.get_axes():
+                ax.autoscale(False)
+
+
+    def on_pick(self, event): 
         line = event.artist
-        print(line)
         if not len(event.ind):  #check the index is valid
             return True
         ind = event.ind[0]
@@ -391,26 +414,64 @@ class PlotFrame(LabelFrame):
         ind = event.ind
         
         roi_point = self.scenario_data.get_selected_roi_point()
+        print("labelling", roi_point,"with", (int(ind[0]), float(ydata[ind[0]] )))
+
+   
+
         #over right any previous point
         self.scenario_data.set_pressure_roi_point(roi_point, (int(ind[0]), float(ydata[ind[0]])))
-        prev_roi_point = self.scenario_data.get_pressure_roi()
+        prev_roi_points = self.scenario_data.get_pressure_roi()
 
-        self.reload_deployment_fig()
+        #prev_roi_set_points = {}
+        # get any previously set points
+        #selected_deployment = self.scenario_data.get_selected_deployment()
+        #scenario_data = self.scenario_data.get_scenario_data()
+        #selected_run = self.scenario_data.get_selected_run()
+        #for r in scenario_data["runs"]:
+        #    if(r["name"] == selected_run):
+        #        for d in r["deployments"]:
+        #            if (d["name"] == selected_deployment):
+        #                prev_roi_set_points = d["pressure_roi"]
+        #                print("from d",prev_roi_set_points)
         
         labels = []
         indexes = []
         values = []
-        for key, value in prev_roi_point.items():
-   
+        # locally set prev points
+        for key, value in prev_roi_points.items():
             labels.append(key)
-            indexes.append(xdata[value[0]])
+            indexes.append(xdata[value[0]]) # doesnt have to be xdata (value[0] should be the same)
             values.append(value[1])
+              # we have set a previous point
+            if(key == roi_point):
+                x_coord = 0
+                y_coord = 0
+                annotations = self.fig.get_axes()[1].texts
+                collections = self.fig.get_axes()[1].collections
+                for index, a in enumerate(reversed(annotations)):
+                    if(a.get_text() == roi_point):
+                        original_index = len(annotations) - index - 1
+                        self.fig.get_axes()[1].texts.pop(original_index)
+                        x_coord=a.xy[0]
+                        y_coord=a.xy[1]
+                        print(x_coord, y_coord)
+                        break
+                
+                for index, c in enumerate(reversed(collections)):
+                    offsets = c.get_offsets()
+                    for o in offsets:
+                        if(o[0] == x_coord and o[1]==y_coord):
+                            original_index = len(collections) - index - 1
+                            self.fig.get_axes()[1].collections.pop(original_index)
+                
+            # plot the values
             self.fig.get_axes()[1].scatter(indexes, values)
             for idx,l in enumerate(labels):
                 self.fig.get_axes()[1].annotate(l,(indexes[idx],values[idx]) )
 
-        self.fig.canvas.draw()         
-        
+            
+
+        self.fig.canvas.draw()       
     
     def on_fig_combo_select(self, event):
         selected_deployment = self.fig_combo.get().split(' (')[0]
@@ -429,5 +490,8 @@ class PlotFrame(LabelFrame):
                         if(d["is_faulty"]):
                             self.mark_faulty_button.configure(text="Undo Faulty")
 
-        self.fig.canvas.draw()
+        
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
+        self.fig.canvas.draw()
+        for ax in self.fig.get_axes():
+                ax.autoscale(False)

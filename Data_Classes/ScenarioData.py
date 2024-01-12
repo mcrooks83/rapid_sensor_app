@@ -22,6 +22,8 @@ class ScenarioData:
         self.is_marked = value
     def get_is_marked(self):
         return self.is_marked
+
+    
     def set_pressure_roi_point(self, key, value):
         self.pressure_roi[key] = value
     def get_pressure_roi(self):
