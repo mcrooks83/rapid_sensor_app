@@ -8,6 +8,8 @@ class Parameters:
         #matrice regroupant les abcisses de chaque limite de section pour tous les tests
         self.parameters['sect']=array([[]])
 
+        self.parameters["toggle_pressure"] = True
+        self.parameters["toggle_accleration"] = True
         #nombre de sections
         self.parameters['nb_sect']=0
 

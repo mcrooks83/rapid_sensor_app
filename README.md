@@ -19,7 +19,9 @@ FIXED: After selecting an ROI in zoom mode, the plot should not zoom back out to
 Also now the plot will remove previous labels if re labelling points
 
 
-“Pressure” and “Acceleration Magnitude” legends should allow for the user to turn the plots off / on for each.
+FIXED “Pressure” and “Acceleration Magnitude” legends should allow for the user to turn the plots off / on for each.
+
+cannot use legends so add checkboxes
 
 
 In the console, it would be nice to have the total number of files for the current run and the % status reported while the user is waiting for the scenario to load.

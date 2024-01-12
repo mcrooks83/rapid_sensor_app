@@ -1,4 +1,4 @@
-from tkinter import Label,LabelFrame,Button,Frame
+from tkinter import Label,LabelFrame,Button,Frame,Checkbutton, BooleanVar
 from tkinter.ttk import Combobox
 
 import matplotlib.pyplot as plt
@@ -20,48 +20,61 @@ class PlotFrame(LabelFrame):
         self.scenario_data = scenario_data
         self.configure(text = "Visualisation",)
         self.grid_columnconfigure(1, weight=1)
-        
-        #self.grid_rowconfigure(1, weight=1)
-        self.label = Label(self, text = "Deployments :")
-        self.label.grid(row=0, column=6,rowspan=1,columnspan=1, sticky='ne')
-
-        self.fig_combo = Combobox(self, width=50,state = "readonly")
-        self.fig_combo.grid(row=0, column=7,rowspan=1,columnspan=1, sticky='nw',padx=5)
-        self.fig_combo.bind("<<ComboboxSelected>>", self.on_fig_combo_select)
-
         self.rowconfigure(1, weight=1)
         self.fig = plt.Figure()
         self.plot_canvas = FigureCanvasTkAgg(self.fig, self)
-        self.plot_canvas.get_tk_widget().grid(row=1,  column=0,columnspan=8, sticky='nsew',padx=5, pady=5)
+        self.plot_canvas.get_tk_widget().grid(row=1, column=0,columnspan=10, sticky='nsew',padx=5, pady=5)
         self.fig.subplots_adjust( bottom=None,  top=None, wspace=None, hspace=None)
         self.frame_tool = Frame(self)
         self.frame_tool.grid(row=4, rowspan=1, column=0,columnspan=7,sticky='ew')
         self.toolbar = NavigationToolbar2Tk(self.plot_canvas, self.frame_tool)
-        #self.toolbar.update()
-       
-        self.next_button = Button(self,text='Next', command=self.load_next_deployment)
-        self.next_button.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nw')
-
-        self.prev_button = Button(self,text='Prev', command=self.load_prev_deployment)
-        self.prev_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='nw')
-
-        self.reset_button = Button(self,text='Reset',command=self.reset_deployment_fig)
-        self.reset_button.grid(row=0, column=5,rowspan=1,columnspan=1, sticky='nw',padx=5)
 
         self.mark_done_button = Button(self,text='Mark as Labeled',command=self.mark_deployment_labeled)
-        self.mark_done_button.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='nw',padx=5)
-
+        self.mark_done_button.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='nsw',padx=5)
         self.mark_faulty_button = Button(self,text='Mark as Faulty',command=self.mark_deployment_faulty)
-        self.mark_faulty_button.grid(row=0, column=1,rowspan=1,columnspan=1, sticky='nw')
+        self.mark_faulty_button.grid(row=0, column=1,rowspan=1,columnspan=1, sticky='nsw')
+
+        toggle_p_var = BooleanVar()
+        toggle_a_var = BooleanVar()
+        self.toggle_pressure = Checkbutton(self, text="Pressure", variable=toggle_p_var, command=self.toggle_pressure )
+        self.toggle_pressure.grid(row=0, column=2,rowspan=1,columnspan=1, sticky='nsew')
+        self.toggle_accleration= Checkbutton(self, text="Acceleration", variable=toggle_a_var, command=self.toggle_accleration)
+        self.toggle_accleration.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nsew')
+
+        self.next_button = Button(self,text='Next', command=self.load_next_deployment)
+        self.next_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='nsew')
+
+        self.prev_button = Button(self,text='Prev', command=self.load_prev_deployment)
+        self.prev_button.grid(row=0, column=5,rowspan=1,columnspan=1, sticky='nsew')
+
+        self.reset_button = Button(self,text='Reset',command=self.reset_deployment_fig)
+        self.reset_button.grid(row=0, column=6,rowspan=1,columnspan=1, sticky='nsew')
+
+        self.label = Label(self, text = "Deployments :")
+        self.label.grid(row=0, column=7,rowspan=1,columnspan=1, sticky='nsew')
+
+        self.fig_combo = Combobox(self, width=30,state = "readonly")
+        self.fig_combo.grid(row=0, column=8,rowspan=1,columnspan=1, sticky='nsew')
+        self.fig_combo.bind("<<ComboboxSelected>>", self.on_fig_combo_select)
 
         self.table_3_button = Button(self, text="compute statistics", command=self.compute_statistics)
         self.table_3_button.grid(row=5, column=0, sticky="w")
         #frame for table 3 statisticsL
         self.table_3_frame = Frame(self)
-        self.table_3_frame.grid(row=7, column=0,rowspan=1,columnspan=7, sticky='nsew',padx=5, pady=5)
+        self.table_3_frame.grid(row=7, column=0,rowspan=1,columnspan=10, sticky='nsew',padx=5, pady=5)
         self.table_3_frame.grid_remove()
         self.table = ""
         self.table3_label = Label(self.table_3_frame, text="This is a label")
+
+    def toggle_pressure(self):
+        value = not self.params.get_parameter("toggle_pressure")
+        self.params.update_parameter("toggle_pressure", value )
+        self.reload_deployment_fig()
+
+    def toggle_accleration(self):
+        value = not self.params.get_parameter("toggle_accleration")
+        self.params.update_parameter("toggle_accleration", value )
+        self.reload_deployment_fig()
 
     def compute_statistics(self):
         print("computing statistics", flush=True)
@@ -133,7 +146,7 @@ class PlotFrame(LabelFrame):
                             else:
                                 self.mark_faulty_button.configure(text="Mark as Faulty")
 
-                            deployment_plot = api.create_pressure_plot(d, self.fig)
+                            deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
                             self.scenario_data.set_selected_deployment_index(index)
             
             self.plot_canvas.mpl_connect('pick_event', self.on_pick)
@@ -163,7 +176,7 @@ class PlotFrame(LabelFrame):
                                 self.mark_faulty_button.configure(text="Undo Faulty")
                             else:
                                 self.mark_faulty_button.configure(text="Mark as Faulty")
-                            deployment_plot = api.create_pressure_plot(d, self.fig)
+                            deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
                             self.scenario_data.set_selected_deployment_index(index)
 
             
@@ -247,7 +260,7 @@ class PlotFrame(LabelFrame):
                         scenario["labeled"] = False
 
         # recrete the pressure plot?
-        new_plot = api.create_pressure_plot(deployment, self.fig)
+        new_plot = api.create_pressure_plot(deployment, self.fig,self.params)
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
 
         self.fig.canvas.draw()
@@ -369,7 +382,7 @@ class PlotFrame(LabelFrame):
                             self.mark_faulty_button.configure(text="Undo Faulty")
                         else:
                             self.mark_faulty_button.configure(text="Mark as Faulty")
-                        deployment_plot = api.create_pressure_plot(d, self.fig)
+                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
         
         
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
@@ -391,7 +404,7 @@ class PlotFrame(LabelFrame):
                         if "is_faulty" in d:
                             d["is_faulty"] == False
                             self.mark_faulty_button.configure(text="Mark as Faulty")
-                        deployment_plot = api.create_pressure_plot(d, self.fig)
+                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
         
         
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
@@ -482,7 +495,7 @@ class PlotFrame(LabelFrame):
                 for index, d in enumerate(r["deployments"]):
                     print(d["name"], selected_deployment)
                     if (d["name"] == selected_deployment):
-                        deployment_plot = api.create_pressure_plot(d, self.fig)
+                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
                         self.scenario_data.set_selected_deployment_index(index)
                         if(d["is_faulty"]):
                             self.mark_faulty_button.configure(text="Undo Faulty")

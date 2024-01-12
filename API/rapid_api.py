@@ -493,40 +493,36 @@ def get_scenarios_to_compare(scenario_list, params):
             scenarios.append(scenario)
     return scenarios
 
-def create_pressure_plot(deployment, fig):
+def create_pressure_plot(deployment, fig, params):
     fig.clear()
     ax = fig.subplots()
     ax.set_title(deployment["name"])
 
-    if("a_mag" in  deployment):
-        ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
-        ax.set_ylabel('Accleation Magntidue')
-        ax.legend(loc='upper right')
+    if(params.get_parameter("toggle_accleration")):
+        if("a_mag" in  deployment):
+            ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
+            ax.set_ylabel('Accleation Magntidue')
+            ax.legend(loc='upper right')
      
-
     ax2 = ax.twinx()
-    ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True,  pickradius=1, label="pressure")
-    
 
-    if "pressure_roi" in deployment:
-        labels = []
-        indexes = []
-        values = []
-        for key, value in deployment["pressure_roi"].items():
-            print("keys",key)
-            labels.append(key)
-            indexes.append(deployment['x_t'][value[0]])
-            values.append(value[1])
-        ax2.scatter(indexes, values)
-        for idx,l in enumerate(labels):
-            ax2.annotate(l,(indexes[idx],values[idx]) )
-        print(labels)
-    if "is_faulty" in deployment and deployment["is_faulty"] == True:
-        ax2.text(0.5, 0.95, 'Faulty Deployment', ha='center', va='top', transform=ax.transAxes,
+    if(params.get_parameter("toggle_pressure")):
+        ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True,  pickradius=1, label="pressure")
+        if "pressure_roi" in deployment:
+            labels = []
+            indexes = []
+            values = []
+            for key, value in deployment["pressure_roi"].items():
+                labels.append(key)
+                indexes.append(deployment['x_t'][value[0]])
+                values.append(value[1])
+            ax2.scatter(indexes, values)
+            for idx,l in enumerate(labels):
+                ax2.annotate(l,(indexes[idx],values[idx]) )
 
-        #ax2.text(0.1, 0.95, 'Faulty Deployment', transform=ax.transAxes,
-       
-        color='red', fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
+        if "is_faulty" in deployment and deployment["is_faulty"] == True:
+            ax2.text(0.5, 0.95, 'Faulty Deployment', ha='center', va='top', transform=ax.transAxes,  
+            color='red', fontsize=12, bbox=dict(facecolor='white', alpha=0.8))
 
     ax.set_xlabel('Time (s)')
     ax2.set_ylabel('Pressure (mbar)')

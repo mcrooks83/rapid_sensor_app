@@ -148,9 +148,7 @@ class LoadScenarioData(LabelFrame):
         self.pbar_ind.config(mode="indeterminate")
 
     def check_process_result(self, process, result_queue, deployment_done_queue):
-            
             try:
-                
                 data = result_queue.get(block=False)
 
                 if "d" in data:
@@ -180,16 +178,13 @@ class LoadScenarioData(LabelFrame):
                             self.scenario_combo['values'] =  (*self.scenario_combo['values'], scenario_data["name"])
                 
             except queue.Empty:
-                #print("EMPTY")
                 # Handle the case where the queue is empty
                 self.after(1, self.check_process_result, process, self.result_queue, self.deployment_done_queue)
 
-    
     def load_scenario(self):
         print("loading scenario")
         self.pbar_ind.tkraise()
         self.pbar_ind.start()
-        #self.start_loading_progress()
 
         self.console_frame.insert_text("Loading scenario, please wait ..." + '\n') 
         sensor_version = self.sensor_version_var.get()
