@@ -25,8 +25,11 @@ class CompareScenariosFrame(LabelFrame):
         self.scenario_B_combo.grid(row=3, column=1,rowspan=1,columnspan=1, sticky='nw',padx=5)
 
         for item in self.scenario_data.get_loaded_scenarios():
-            self.scenario_A_combo['values'] = (*self.scenario_A_combo['values'], item)
-            self.scenario_B_combo['values'] = (*self.scenario_B_combo['values'], item)
+            s_data = api.read_scenario_from_json_file(self.params, item)
+            if("labeled" in s_data):
+                if(s_data["labeled"] == True):
+                    self.scenario_A_combo['values'] = (*self.scenario_A_combo['values'], item)
+                    self.scenario_B_combo['values'] = (*self.scenario_B_combo['values'], item)
         
         self.scenario_A_combo.bind("<<ComboboxSelected>>", self.on_first_scenario_select)
         self.scenario_B_combo.bind("<<ComboboxSelected>>", self.on_second_scenario_select)
