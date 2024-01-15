@@ -191,25 +191,25 @@ def pre_process_file(deployment, data, deployment_number, params):
     
     return deployment_dict
 
-def load_scenario_from_directory(params, result_queue, deployment_done_queue):
+def load_scenario_from_directory(params, result_queue):
     scenario_dir = params.get_parameter('scenario_folder_dir')
     sensor_version = params.get_parameter("sensor_version")
     print(scenario_dir, flush=True)
-    #get into the scenario directory
     chdir(r"{}".format(scenario_dir))
- 
     scenario_name = scenario_dir.split("/")[-1]
     print("loading scenario", scenario_name)
     scenario_data={}
     scenario_data["name"] = scenario_name
     scenario_data["runs"] = []
-    
-    # load all runs in the scenario
-    # could parallelise this if too slow
     print(listdir("."))
     directory_list = listdir(".")
-    for run_dir_name in directory_list:
-        print(run_dir_name)
+    
+    directory_list = [file for file in directory_list if not file.startswith('.')]
+
+    for idx, run_dir_name in enumerate( directory_list):
+        print(f"run {idx+1} of {len(directory_list)} runs")
+        result_queue.put({"run_status":{"run_name": run_dir_name, "runs": len(directory_list), "run_no":idx+1}})
+       
         if isdir(run_dir_name):
             print("loading run", run_dir_name)
             run_data = {
@@ -224,26 +224,29 @@ def load_scenario_from_directory(params, result_queue, deployment_done_queue):
             else:
                 print("sensor version: 2")
                 deployments= glob('*.IMP')
-            
+
             # if there are files to read
             if deployments:
                 deployment_number=0
-                
+               
                 t1=time.time()
-                for d in deployments:
+                for idx, d in enumerate(deployments):
+
+                    print(f"processing deployment {idx+1} of {len(deployments)} deployments")
+                    result_queue.put({"deployment_status": { "deployment_name": d, "deployment_no": deployment_number+1, "deployments": len(deployments)}})
+
                     if(sensor_version == 1):
-                        #res = get_results(d, params)
                         res = get_v1_pressure_results_only(d, params)
                     else:
                         res = get_results_v2_format(d, params)
                     deployment_result = pre_process_file(d, res, deployment_number, params)
                     run_data["deployments"].append(deployment_result)
+
+                    # data gets put here
                     result_queue.put({"d":d})
                     deployment_number=deployment_number+1
                 t2=time.time()
                 print(("It takes %s seconds to load data ") % (t2 - t1))
-            
-                #add to the scenario
                 scenario_data["runs"].append(run_data)
             
             chdir(r"{}".format(scenario_dir))
