@@ -23,8 +23,19 @@ FIXED “Pressure” and “Acceleration Magnitude” legends should allow for t
 
 cannot use legends so add checkboxes
 
+FIXED: In the console, it would be nice to have the total number of files for the current run and the % status reported while the user is waiting for the scenario to load.
 
-In the console, it would be nice to have the total number of files for the current run and the % status reported while the user is waiting for the scenario to load.
+FIXED: call load import raw data 
+
+FIXED: When scenario is fully labelled need to add to the compare scenario drop down boxes
+
+FIXED: compare runs within a scenario that are completed -> need at least 1 complete run to do it with
+
+FIXED: - check the accleration - due to wrong start offset in finding max accel mag in window
+
+-check on windows VM
+
+
 
 
 

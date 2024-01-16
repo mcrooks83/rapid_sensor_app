@@ -56,13 +56,13 @@ def unpacking(row,params):
     index = unpack('>h', bytes(row[0:2]))[0]
     list_values.append(index)
     acc_x = unpack('>h', bytes(row[2:4]))[0]
-    acc_x = float(acc_x) #/ params.get_parameter('acc_gain')
+    acc_x = float(acc_x) / params.get_parameter('acc_gain')
     list_values.append(acc_x)
     acc_y = unpack('>h', bytes(row[4:6]))[0]
-    acc_y = acc_y #/ params.get_parameter('acc_gain')
+    acc_y = float(acc_y) / params.get_parameter('acc_gain')
     list_values.append(acc_y)
     acc_z = unpack('>h', bytes(row[6:8]))[0]
-    acc_z = acc_z #/ params.get_parameter('acc_gain')
+    acc_z = float(acc_z) / params.get_parameter('acc_gain')
     list_values.append(acc_z)
     pressure = unpack('>h', bytes(row[8:10]))[0] 
     pressure = pressure / params.get_parameter('p_gain')
@@ -134,8 +134,7 @@ def get_v1_pressure_results_only(filename, param):
         for i in range(0, num_rows, accel_max_window):
             offset = i * row_size                   # offset for each 20th row
             tmp_max_accel_mag = 0
-            start_offset = max(0, offset - prior_rows_to_read)
-            
+            start_offset = max(0, offset - (prior_rows_to_read*row_size))
             mm.seek(offset)
             row = mm.read(row_size)                 # read single row
             
@@ -157,13 +156,13 @@ def get_v1_pressure_results_only(filename, param):
                         if(unpack_for_accel[-1]>tmp_max_accel_mag):
                             tmp_max_accel_mag = unpack_for_accel[-1]
             
-            unpacked_row.append(tmp_max_accel_mag)   
-            results.append(unpacked_row)
+            unpacked_row.append(tmp_max_accel_mag)  
+            print("new",unpacked_row) 
+            results.append( unpacked_row)
         
         mm.close()
         file.close() 
     return results
-
 
 #######
 
@@ -214,7 +213,8 @@ def load_scenario_from_directory(params, result_queue):
             print("loading run", run_dir_name)
             run_data = {
                 "name": run_dir_name,
-                "deployments" : []
+                "deployments" : [],
+                "labeled": False
             }
             chdir(r"{}".format(run_dir_name))
 

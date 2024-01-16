@@ -17,7 +17,7 @@ class Parameters:
         self.parameters['click_sect']=False
 
         # adresse des différents fichiers
-        self.parameters['folder_dir']= '' #'/Users/mcrooks/desktop/RightStep/RIGHTSTEP/PROJECTS/TalTech/data'
+        self.parameters['folder_dir']= '/Users/mcrooks/desktop/RightStep/RIGHTSTEP/PROJECTS/TalTech/data'
         self.parameters['save_fold']=''
         self.parameters['sectFile']=''
         self.parameters['output_dir_name'] = 'scenario_outputs'

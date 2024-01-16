@@ -14,7 +14,7 @@ class LoadScenarioData(LabelFrame):
         self.scenario_data =scenario_data
         self.plot_frame = plot_frame
         self.console_frame = console_frame
-        self.configure(text = "Load Scenario",)
+        self.configure(text = "Import Scenario",)
         self.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='nesw')
         self.grid_columnconfigure(1, weight=1)
         self.data_dir = Label(self, text = "Sensor Version : ")
@@ -32,7 +32,7 @@ class LoadScenarioData(LabelFrame):
         self.open_button.grid(row=1, column=1, columnspan=1, sticky='w',pady=5)
         self.step1button_frame = Frame(self)
         self.step1button_frame.grid(row=1, column=3,columnspan=1, sticky='e')
-        self.step1run_button = Button(self.step1button_frame,text='Load Scenario ',command=self.load_scenario)
+        self.step1run_button = Button(self.step1button_frame,text='Import Scenario ',command=self.load_scenario)
         self.step1run_button.grid(row=0, column=1, columnspan=1, sticky='ew',padx=5,pady=5)
         self.step1run_button.configure(state="disabled")
         self.loaded_scenarios = Label(self, text = "Scenarios : ")
@@ -127,11 +127,11 @@ class LoadScenarioData(LabelFrame):
                 data = result_queue.get(block=False)
 
                 if("run_status" in data):
-                    self.console_frame.insert_text(f"processing {data['run_status']['run_no']} of {data['run_status']['runs']} runs ({data['run_status']['run_name']})" + '\n') 
+                    self.console_frame.insert_text(f"processing {data['run_status']['run_no']} of {data['run_status']['runs']} runs ({data['run_status']['run_name']})..." + '\n') 
                     self.after(1, self.check_process_result, process, self.result_queue)
 
                 elif("deployment_status" in data):
-                    self.console_frame.insert_text(f"   processing {data['deployment_status']['deployment_no']} of {data['deployment_status']['deployments']} deployments ({data['deployment_status']['deployment_name']})" + '\n') 
+                    self.console_frame.insert_text(f"   processing {data['deployment_status']['deployment_no']} of {data['deployment_status']['deployments']} deployments ({data['deployment_status']['deployment_name']})..." + '\n') 
                     self.after(1, self.check_process_result, process, self.result_queue)
 
                 elif "d" in data:

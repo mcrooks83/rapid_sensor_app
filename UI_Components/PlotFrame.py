@@ -66,6 +66,13 @@ class PlotFrame(LabelFrame):
         self.table = ""
         self.table3_label = Label(self.table_3_frame, text="This is a label")
 
+    def set_ref_to_compare_frame(self, ref):
+        print(ref)
+        self.ref_to_compare_frame = ref
+
+    def get_ref_to_compare_frame(self, ref):
+        return self.ref_to_compare_frame
+
     def toggle_pressure(self):
         value = not self.params.get_parameter("toggle_pressure")
         self.params.update_parameter("toggle_pressure", value )
@@ -249,8 +256,13 @@ class PlotFrame(LabelFrame):
 
                     if(all_deploymnets):
                         r["labeled"] = True
-                    else:
-                        r["labeled"] = False
+                        #at least one run is labeled
+                        values_list = self.ref_to_compare_frame.scenario_A_combo['values']
+                        if(scenario["name"] not in values_list):
+                            self.ref_to_compare_frame.scenario_A_combo['values'] = (*self.ref_to_compare_frame.scenario_A_combo['values'], scenario["name"])
+                            self.ref_to_compare_frame.scenario_B_combo['values'] = (*self.ref_to_compare_frame.scenario_B_combo['values'], scenario["name"])
+                        else:
+                            r["labeled"] = False
 
                     all_runs = all('labeled' in obj and obj['labeled'] is True for obj in scenario["runs"])
 
@@ -320,6 +332,11 @@ class PlotFrame(LabelFrame):
 
                 if(all_deploymnets):
                     r["labeled"] = True
+                    #at least one run is labeled
+                    values_list = self.ref_to_compare_frame.scenario_A_combo['values']
+                    if(scenario["name"] not in values_list):
+                        self.ref_to_compare_frame.scenario_A_combo['values'] = (*self.ref_to_compare_frame.scenario_A_combo['values'], scenario["name"])
+                        self.ref_to_compare_frame.scenario_B_combo['values'] = (*self.ref_to_compare_frame.scenario_B_combo['values'], scenario["name"])
                 else:
                     r["labeled"] = False
 
@@ -340,8 +357,7 @@ class PlotFrame(LabelFrame):
             # move on
             
             self.load_next_deployment()
-    
-            #(*self.plot_frame.fig_combo['values'], dep)
+
             self.fig_combo['values'] = new_item_list
             #if all the runs are done then label the scenario
             all_runs = all('labeled' in obj and obj['labeled'] is True for obj in scenario["runs"])

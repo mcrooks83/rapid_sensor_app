@@ -26,10 +26,21 @@ class CompareScenariosFrame(LabelFrame):
 
         for item in self.scenario_data.get_loaded_scenarios():
             s_data = api.read_scenario_from_json_file(self.params, item)
-            if("labeled" in s_data):
-                if(s_data["labeled"] == True):
+            for r in s_data["runs"]:
+                #at least 1 run is fully labelled
+                if(r["labeled"] == True):
                     self.scenario_A_combo['values'] = (*self.scenario_A_combo['values'], item)
                     self.scenario_B_combo['values'] = (*self.scenario_B_combo['values'], item)
+
+            #if("labeled" in s_data):
+
+                #if scenario fully labelled
+            #    if(s_data["labeled"] == True):
+            #        self.scenario_A_combo['values'] = (*self.scenario_A_combo['values'], item)
+            #        self.scenario_B_combo['values'] = (*self.scenario_B_combo['values'], item)
+
+            
+                    
         
         self.scenario_A_combo.bind("<<ComboboxSelected>>", self.on_first_scenario_select)
         self.scenario_B_combo.bind("<<ComboboxSelected>>", self.on_second_scenario_select)
@@ -49,6 +60,10 @@ class CompareScenariosFrame(LabelFrame):
         self.compare_scenarios_mean_diff_btn.configure(state="disabled")
         self.compare_scenarios_mean_diff_btn.grid(row=5, column=2,sticky='ws',pady=5 )
 
+        self.set_ref_on_plot_frame(self)
+
+    def set_ref_on_plot_frame(self, ref):
+        self.plot_frame.set_ref_to_compare_frame(ref)
 
     def compare_scenarios_mean_diff(self):
         if(self.second_scenario_name and self.first_scenario_name):
