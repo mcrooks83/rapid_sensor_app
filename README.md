@@ -33,6 +33,7 @@ FIXED: compare runs within a scenario that are completed -> need at least 1 comp
 
 FIXED: - check the accleration - due to wrong start offset in finding max accel mag in window
 
+TEST: - removed async portion from api
 
 
 # attention
