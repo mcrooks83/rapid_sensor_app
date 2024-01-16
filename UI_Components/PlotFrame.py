@@ -57,7 +57,7 @@ class PlotFrame(LabelFrame):
         self.fig_combo.grid(row=0, column=8,rowspan=1,columnspan=1, sticky='nsew')
         self.fig_combo.bind("<<ComboboxSelected>>", self.on_fig_combo_select)
 
-        self.table_3_button = Button(self, text="compute statistics", command=self.compute_statistics)
+        self.table_3_button = Button(self, text="compute statistics", command= self.compute_statistics)
         self.table_3_button.grid(row=5, column=0, sticky="w")
         #frame for table 3 statisticsL
         self.table_3_frame = Frame(self)
@@ -88,7 +88,9 @@ class PlotFrame(LabelFrame):
         sd = self.scenario_data.get_scenario_data_for_computation()
         if("labeled" in sd.keys()):
             if(sd['labeled']):
-                result = asyncio.run(api.compute_passage_and_normalise_for_a_run(sd['runs'], self.params))
+                #result = asyncio.run(api.compute_passage_and_normalise_for_a_run(sd['runs'], self.params))
+                #result = await api.compute_passage_and_normalise_for_a_deployment(sd["runs"], self.params)
+                result = api.compute_passage_and_normalise_for_a_run_sync(sd["runs"], self.params)
                 print(result)
                 sd["consolidated_scenario_data"] = api.consolidate_runs_for_scenario(sd, self.params)
                 sd["table_3_stats"] = api.compute_table_3_statistics(sd)

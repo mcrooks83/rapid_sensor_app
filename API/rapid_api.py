@@ -491,7 +491,8 @@ def get_scenarios_to_compare(scenario_list, params):
     if(len(scenario_list) > 0):
         for s in scenario_list:
             scenario = read_scenario_from_json_file(params, s)
-            result = asyncio.run(compute_passage_and_normalise_for_a_run(scenario['runs'], params))
+            #result = asyncio.run(compute_passage_and_normalise_for_a_run(scenario['runs'], params))
+            result =  compute_passage_and_normalise_for_a_run_sync(scenario["runs"], params)
             scenario["consolidated_scenario_data"] = consolidate_runs_for_scenario(scenario, params)
             scenarios.append(scenario)
     return scenarios
@@ -586,25 +587,43 @@ def normalise_deployment_data(deployment, N):
     
     return normalised_data
 
-async def compute_passage_and_normalise_for_a_deployment(deployment, params):
+#async def compute_passage_and_normalise_for_a_deployment(deployment, params):
+#    print("computing only passasge durations")
+#    print(deployment["pressure_roi"],  flush=True)
+#    deployment["passage_durations"] = compute_passage_durations(deployment['pressure_roi'], params.get_parameter('fs'))
+#    deployment['normalised_data'] = normalise_deployment_data(deployment, params.get_parameter('resample_N'))
+
+def compute_passage_and_normalise_for_a_deployment_sync(deployment, params):
     print("computing only passasge durations")
     print(deployment["pressure_roi"],  flush=True)
     deployment["passage_durations"] = compute_passage_durations(deployment['pressure_roi'], params.get_parameter('fs'))
-    deployment['normalised_data'] = normalise_deployment_data(deployment, params.get_parameter('resample_N'))
-    
+    deployment['normalised_data'] = normalise_deployment_data(deployment, params.get_parameter('resample_N')) 
+
 # assumes all deployments in the run are complete
 # this is aysnc but for a demo does not need to be
-async def compute_passage_and_normalise_for_a_run(runs, params):
+#async def compute_passage_and_normalise_for_a_run(runs, params):
+#    deployment_list = []
+#    for r in runs:
+#        print("computing passage durations and normalising")
+#        for d in r['deployments']:
+
+            # only include non faulty deployments
+#            if(d["is_faulty"] == False):
+#                deployment_list.append(compute_passage_and_normalise_for_a_deployment(d, params))
+#        await asyncio.gather(*deployment_list)   
+#    return "run"
+
+def compute_passage_and_normalise_for_a_run_sync(runs, params):
     deployment_list = []
     for r in runs:
         print("computing passage durations and normalising")
         for d in r['deployments']:
-
             # only include non faulty deployments
             if(d["is_faulty"] == False):
-                deployment_list.append(compute_passage_and_normalise_for_a_deployment(d, params))
-        await asyncio.gather(*deployment_list)   
+                res = compute_passage_and_normalise_for_a_deployment_sync(d, params)
     return "run"
+
+
 
 def consolidate_deployments(deployments, params, h_min, h_max):
     run_names = []
