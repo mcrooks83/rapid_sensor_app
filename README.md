@@ -33,7 +33,13 @@ FIXED: compare runs within a scenario that are completed -> need at least 1 comp
 
 FIXED: - check the accleration - due to wrong start offset in finding max accel mag in window
 
-TEST: - removed async portion from api
+FIXED: - removed async portion from api
+
+CANT REPRO: After the user has selected a faulty deployment and clicks on “Next” the “Undo Faulty” button is still displayed, even if the current deployment is “not labeled”.
+
+FIXED: Acceleration magnitude and pressure labels need to be swapped: “Pressure (mbar)” on the right vertical axis, “Acceleration Magnitude (g)” on the left vertical axis.
+
+The units of acceleration remain incorrect. At rest (e.g. the beginning and end of the datasets), the values should be around 1 g, which denotes the gravitational acceleration. Also as a reference, the maximum acceleration of the sensors should be around 400 g.
 
 
 # attention
