@@ -47,6 +47,7 @@ def create_data_axes(data, params):
         else:
             xt = ind  / params.get_parameter('fs')
             x_t.append(xt)
+            a_mag.append(val[5]) # adds the accel_magnitdue
         y_p.append(val[4])
     return x_t, y_p, a_mag
 
@@ -67,8 +68,11 @@ def unpacking(row,params):
     pressure = unpack('>h', bytes(row[8:10]))[0] 
     pressure = pressure / params.get_parameter('p_gain')
     list_values.append(pressure)
+ 
     amag = round(sqrt(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2)),2)
     list_values.append(amag)
+    #np_mag = np.sqrt(acc_x**2 + acc_y**2 + acc_z**2)
+
     return list_values
 
 # this needs clarification for time axis
@@ -95,7 +99,7 @@ def unpacking_v2_format(row,params):
     pressure = pressure /params.get_parameter('p_gain')
     list_values.append(pressure)
     
-    # additioal
+    # additioal in position 5
     amag = round(sqrt(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2)),2)
     list_values.append(amag)
     return list_values
@@ -120,7 +124,6 @@ def get_results(filename, params):
     return results
 
 
-###### Doing 
 def get_v1_pressure_results_only(filename, param):
     results = []            # holds every 20th row
     with open(filename,'rb') as file:
@@ -157,7 +160,6 @@ def get_v1_pressure_results_only(filename, param):
                             tmp_max_accel_mag = unpack_for_accel[-1]
             
             unpacked_row.append(tmp_max_accel_mag)  
-            print("new",unpacked_row) 
             results.append( unpacked_row)
         
         mm.close()
@@ -185,6 +187,7 @@ def pre_process_file(deployment, data, deployment_number, params):
     x_t, y_p, a_mag = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
+    deployment_dict['a_mag'] = a_mag
     if(len(a_mag)>0):
         deployment_dict["a_mag"] = a_mag
     
@@ -224,6 +227,7 @@ def load_scenario_from_directory(params, result_queue):
             else:
                 print("sensor version: 2")
                 deployments= glob('*.IMP')
+                hig_deployments = glob('*.HIG') # Hi G accleration
 
             # if there are files to read
             if deployments:

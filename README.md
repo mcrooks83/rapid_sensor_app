@@ -39,7 +39,7 @@ CANT REPRO: After the user has selected a faulty deployment and clicks on “Nex
 
 FIXED: Acceleration magnitude and pressure labels need to be swapped: “Pressure (mbar)” on the right vertical axis, “Acceleration Magnitude (g)” on the left vertical axis.
 
-The units of acceleration remain incorrect. At rest (e.g. the beginning and end of the datasets), the values should be around 1 g, which denotes the gravitational acceleration. Also as a reference, the maximum acceleration of the sensors should be around 400 g.
+TODO: The units of acceleration remain incorrect. At rest (e.g. the beginning and end of the datasets), the values should be around 1 g, which denotes the gravitational acceleration. Also as a reference, the maximum acceleration of the sensors should be around 400 g.
 
 
 # attention
