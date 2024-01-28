@@ -34,12 +34,18 @@ class PlotFrame(LabelFrame):
         self.mark_faulty_button = Button(self,text='Mark as Faulty',command=self.mark_deployment_faulty)
         self.mark_faulty_button.grid(row=0, column=1,rowspan=1,columnspan=1, sticky='nsw')
 
-        toggle_p_var = BooleanVar()
-        toggle_a_var = BooleanVar()
-        self.toggle_pressure = Checkbutton(self, text="Pressure", variable=toggle_p_var, command=self.toggle_pressure )
+        self.toggle_p_var = BooleanVar()
+        self.toggle_a_var = BooleanVar()
+
+        self.toggle_a_var.set(True)
+        self.toggle_p_var.set(True)
+        
+       
+        self.toggle_pressure = Checkbutton(self, text="Pressure", variable=self.toggle_p_var, command=self.toggle_pressure )
         self.toggle_pressure.grid(row=0, column=2,rowspan=1,columnspan=1, sticky='nsew')
-        self.toggle_accleration= Checkbutton(self, text="Acceleration", variable=toggle_a_var, command=self.toggle_accleration)
+        self.toggle_accleration= Checkbutton(self, text="Acceleration", variable=self.toggle_a_var, command=self.toggle_accleration)
         self.toggle_accleration.grid(row=0, column=3,rowspan=1,columnspan=1, sticky='nsew')
+        
 
         self.next_button = Button(self,text='Next', command=self.load_next_deployment)
         self.next_button.grid(row=0, column=4,rowspan=1,columnspan=1, sticky='nsew')

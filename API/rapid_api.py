@@ -508,14 +508,14 @@ def create_pressure_plot(deployment, fig, params):
 
     if(params.get_parameter("toggle_accleration")):
         if("a_mag" in  deployment):
-            ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="acceleration magntidue")
+            ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
             ax.legend(loc='upper right')
      
     ax2 = ax.twinx()
 
     if(params.get_parameter("toggle_pressure")):
-        ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True,  pickradius=1, label="pressure")
+        ax2.plot(deployment['x_t'], deployment['y_p'], color="blue", linewidth=2, picker=True,  pickradius=1, label="Pressure (mbar)")
         if "pressure_roi" in deployment:
             labels = []
             indexes = []

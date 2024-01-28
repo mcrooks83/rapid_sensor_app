@@ -68,14 +68,14 @@ class LoadScenarioData(LabelFrame):
         self.step1run_button.configure(state="disabled")
         if(self.sensor_version_var.get() == 1):
             self.console_frame.clear_console()
-            self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 2048 Hz" '\n') 
+            self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 100 Hz" '\n') 
             self.params.update_parameter("sensor_version", self.sensor_version_var.get())
             self.params.update_parameter("fs", 2048)
             self.params.update_parameter("fs_p", 100)
             self.params.update_parameter("packet_length", 11)
         elif(self.sensor_version_var.get() == 2):
             self.console_frame.clear_console()
-            self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 100 Hz" '\n') 
+            self.console_frame.insert_text("Sensor version:  v" + str(self.sensor_version_var.get()) + " 2000 Hz" '\n') 
             self.params.update_parameter("sensor_version", self.sensor_version_var.get())
             self.params.update_parameter("fs", 100)
             self.params.update_parameter("fs_p", 100)
