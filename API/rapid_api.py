@@ -136,29 +136,28 @@ def get_v1_pressure_results_only(filename, param):
         # loop over every 20th row (2khz - 100hz ratio)
         for i in range(0, num_rows, accel_max_window):
             offset = i * row_size                   # offset for each 20th row
+            if(i < 100):
+                print(offset)
             tmp_max_accel_mag = 0
             start_offset = max(0, offset - (prior_rows_to_read*row_size))
             mm.seek(offset)
-            row = mm.read(row_size)                 # read single row
-            
+            row = mm.read(row_size)                 # read single row 
             unpacked_row = unpacking(row,param)     # unpack single row
-           
             if(start_offset == 0):
                 tmp_max_accel_mag = unpacked_row[-1]
             else:
                 mm.seek(start_offset)
-                # reads 20 * 11 bytes for 20 rows
-                data_block = mm.read(accel_max_window*row_size)
-                
+                # reads 20 * 11 bytes for 20 rows - add 1 to the 
+                data_block = mm.read(accel_max_window+1*row_size)    
                 # process blocks of 11 bytes
                 for i in range(accel_max_window):
+                    
                     row_data = data_block[i * 11: (i + 1) * 11]
                     #print(row_data)
                     if(len(row_data) == row_size):
                         unpack_for_accel = unpacking(row_data,param)
                         if(unpack_for_accel[-1]>tmp_max_accel_mag):
                             tmp_max_accel_mag = unpack_for_accel[-1]
-            
             unpacked_row.append(tmp_max_accel_mag)  
             results.append( unpacked_row)
         
@@ -168,12 +167,26 @@ def get_v1_pressure_results_only(filename, param):
 
 #######
 
-def get_results_v2_format(filename, param):
+def get_results_v2_format(filename, hig_filename, param):
+
+    complete_results = []
+    # get 100hz presssure / accel
     with open(filename,'rb') as file:
         mm = mmap(file.fileno(), 0, access=ACCESS_READ)
         results = [unpacking_v2_format(row,param) for row in read_row(mm,param)]
+        complete_results.append(results)
         mm.close()
         file.close() 
+    
+    # get the hig
+    if hig_filename:
+        with open(hig_filename,'rb') as file:
+            mm = mmap(file.fileno(), 0, access=ACCESS_READ)
+            #results = [unpacking_v2_format(row,param) for row in read_row(mm,param)]
+            #complete_results.append(results)
+            mm.close()
+            file.close() 
+        
     return results
 
 def pre_process_file(deployment, data, deployment_number, params):
@@ -242,7 +255,11 @@ def load_scenario_from_directory(params, result_queue):
                     if(sensor_version == 1):
                         res = get_v1_pressure_results_only(d, params)
                     else:
-                        res = get_results_v2_format(d, params)
+                        print(hig_deployments[idx])
+
+                        res = get_results_v2_format(d, hig_deployments[idx], params)
+                        #res_hig = get_hig_results(hig_deployments[idx], params)
+
                     deployment_result = pre_process_file(d, res, deployment_number, params)
                     run_data["deployments"].append(deployment_result)
 
