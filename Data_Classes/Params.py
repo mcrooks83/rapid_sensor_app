@@ -31,6 +31,7 @@ class Parameters:
         self.parameters['fs_p'] = 100 #sample rate of pressure sensor in Hz
         self.parameters['fs_hg'] = 2000
         self.parameters['packet_length'] = 29 #size of bytes per line
+        self.parameters['packet_length_hig'] = 11
         self.parameters['step_size']  = 20
 
         # paramètres de base du rapid sensor
@@ -38,6 +39,7 @@ class Parameters:
 
         self.parameters['p_gain'] = 10
         self.parameters['acc_gain'] = 10
+        self.parameters['hig_gain'] = 0.981
 
         self.parameters["accel_max_window"] = 20
 
