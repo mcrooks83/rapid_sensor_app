@@ -525,7 +525,7 @@ def create_pressure_plot(deployment, fig, params):
 
     if(params.get_parameter("toggle_accleration")):
         if("a_mag" in  deployment):
-            ax.plot(deployment['x_t'], deployment['a_mag'], color="red", linewidth=2, picker=False, alpha=0.4, label="Acceleration Magntidue (g)")
+            ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.4, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
             ax.legend(loc='upper right')
      
