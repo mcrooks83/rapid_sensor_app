@@ -525,9 +525,9 @@ def create_pressure_plot(deployment, fig, params):
 
     if(params.get_parameter("toggle_accleration")):
         if("a_mag" in  deployment):
-            ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.4, label="Acceleration Magntidue (g)")
+            ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.8, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
-            ax.legend(loc='upper right')
+            ax.legend(loc='upper left')
      
     ax2 = ax.twinx()
 
@@ -552,7 +552,7 @@ def create_pressure_plot(deployment, fig, params):
     ax.set_xlabel('Time (s)')
     ax2.set_ylabel('Pressure (mbar)')
     ax2.yaxis.tick_right()
-    ax2.legend(loc='upper left')
+    ax2.legend(loc='upper right')
 
     ax.grid(True)
 
