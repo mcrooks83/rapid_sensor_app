@@ -73,7 +73,6 @@ class PlotFrame(LabelFrame):
         self.table3_label = Label(self.table_3_frame, text="This is a label")
 
     def set_ref_to_compare_frame(self, ref):
-        print(ref)
         self.ref_to_compare_frame = ref
 
     def get_ref_to_compare_frame(self, ref):

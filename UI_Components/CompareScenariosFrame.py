@@ -11,8 +11,8 @@ class CompareScenariosFrame(LabelFrame):
         self.console_frame = console_frame
         self.plot_frame = plot_frame
         self.configure(text = "Plot Scenario Results",)
-        self.grid(row=2, column=0,rowspan=1, sticky='nesw')
-        self.grid_columnconfigure(2, weight=1)
+        self.grid(row=3, column=0,rowspan=1, sticky='nesw')
+        self.grid_columnconfigure(3, weight=1)
 
         self.loaded_scenarios_A = Label(self, text = "Scenario : ")
         self.loaded_scenarios_A.grid(row=2, column=0,  sticky='w')

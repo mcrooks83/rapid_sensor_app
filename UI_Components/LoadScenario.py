@@ -16,7 +16,7 @@ class LoadScenarioData(LabelFrame):
         self.console_frame = console_frame
         self.configure(text = "Import Scenario",)
         self.grid(row=0, column=0,rowspan=1,columnspan=1, sticky='nesw')
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.data_dir = Label(self, text = "Sensor Version : ")
         self.data_dir.grid(row=0, column=0, )
         self.sensor_version_var = IntVar()
