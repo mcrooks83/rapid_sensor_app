@@ -92,12 +92,18 @@ class PlotFrame(LabelFrame):
     def compute_statistics(self):
         print("computing statistics", flush=True)
         sd = self.scenario_data.get_scenario_data_for_computation()
-        if("labeled" in sd.keys()):
+
+        runs_to_use = []
+        for r in sd["runs"]:
+            #at least 1 run is fully labelled
+            if(r["labeled"] == True):
+                runs_to_use.append(r)
+
+        #if("labeled" in sd.keys()):
+        if(len(runs_to_use) > 0):
             if(sd['labeled']):
-                #result = asyncio.run(api.compute_passage_and_normalise_for_a_run(sd['runs'], self.params))
-                #result = await api.compute_passage_and_normalise_for_a_deployment(sd["runs"], self.params)
-                result = api.compute_passage_and_normalise_for_a_run_sync(sd["runs"], self.params)
-                print(result)
+                #result = api.compute_passage_and_normalise_for_a_run_sync(sd["runs"], self.params)
+                result = api.compute_passage_and_normalise_for_a_run_sync(runs_to_use, self.params)
                 sd["consolidated_scenario_data"] = api.consolidate_runs_for_scenario(sd, self.params)
                 sd["table_3_stats"] = api.compute_table_3_statistics(sd)
 
@@ -191,7 +197,7 @@ class PlotFrame(LabelFrame):
                                 self.mark_faulty_button.configure(text="Undo Faulty")
                             else:
                                 self.mark_faulty_button.configure(text="Mark as Faulty")
-                            deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
+                            deployment_plot = api.create_pressure_plot(self.scenario_data, d, self.fig, self.params)
                             self.scenario_data.set_selected_deployment_index(index)
 
             
@@ -363,7 +369,10 @@ class PlotFrame(LabelFrame):
                     new_item_list.append(item)
             self.fig_combo['values'] =  new_item_list
             # move on
-            
+
+            #remove the saved roi points on scenarion data
+            print("removing saved points")
+            self.scenario_data.clear_pressure_roi()
             self.load_next_deployment()
 
             self.fig_combo['values'] = new_item_list
@@ -406,7 +415,7 @@ class PlotFrame(LabelFrame):
                             self.mark_faulty_button.configure(text="Undo Faulty")
                         else:
                             self.mark_faulty_button.configure(text="Mark as Faulty")
-                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
+                        deployment_plot = api.create_pressure_plot(self.scenario_data,d, self.fig, self.params)
         
         
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
@@ -449,8 +458,6 @@ class PlotFrame(LabelFrame):
         
         roi_point = self.scenario_data.get_selected_roi_point()
         print("labelling", roi_point,"with", (int(ind[0]), float(ydata[ind[0]] )))
-
-   
 
         #over right any previous point
         self.scenario_data.set_pressure_roi_point(roi_point, (int(ind[0]), float(ydata[ind[0]])))
@@ -519,7 +526,7 @@ class PlotFrame(LabelFrame):
                 for index, d in enumerate(r["deployments"]):
                     print(d["name"], selected_deployment)
                     if (d["name"] == selected_deployment):
-                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
+                        deployment_plot = api.create_pressure_plot(self.scenario_data, d, self.fig, self.params)
                         self.scenario_data.set_selected_deployment_index(index)
                         if(d["is_faulty"]):
                             self.mark_faulty_button.configure(text="Undo Faulty")

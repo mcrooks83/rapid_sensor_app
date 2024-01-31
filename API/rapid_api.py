@@ -17,9 +17,12 @@ import statistics
 ### HELPERS ###
 def make_scenario_list(s1, s2):
     s_list = []
-    if(len(s1)>0):
+    print("box labels")
+    print(s1)
+    print(s2)
+    if s1 != " " and len(s1)>0:
         s_list.append(s1)
-    if(len(s2)>0):
+    if s2 != " " and len(s2)>0:
         s_list.append(s2)
     return s_list
 
@@ -367,8 +370,6 @@ def create_fig_7_rpc_plots(scenarios, ax1, ax2):
             define_box_properties(ax1, ax1.boxplot(plot_dict[key],
                                                        positions=np.array(np.arange(len(plot_dict[key]))), widths=0.6, boxprops=dict(color='#2C7BB6')), '#2C7BB6', key)
         count = count + 1
-           
-        count = count + 1
     ax1.set_xticks(np.arange(0, len(ticks)), ticks)
 
     run_labels = []
@@ -499,13 +500,16 @@ def create_fig_6_box_plots(scenarios, fig):
             count = count + 1
             
         ax.set_xticks(np.arange(0, len(ticks) * 2, 2), ticks)
+        ax.set_ylabel('Passage Duration (s)')
 
     else:
         #dealing with one
         print("dealing with 1 scenario")
         for key in plot_dict:
+            print(plot_dict[key])
             define_box_properties(ax, ax.boxplot(plot_dict[key],positions=np.array(np.arange(len(plot_dict[key])))*2.0,  boxprops=dict(color='b')), 'b', key) 
         ax.set_xticks(np.arange(0, len(ticks) * 2, 2), ticks)
+        ax.set_ylabel('Passage Duration (s)')
         
 def get_scenarios_to_compare(scenario_list, params):
     scenarios = []
@@ -518,7 +522,7 @@ def get_scenarios_to_compare(scenario_list, params):
             scenarios.append(scenario)
     return scenarios
 
-def create_pressure_plot(deployment, fig, params):
+def create_pressure_plot(scenario_data, deployment, fig, params):
     fig.clear()
     ax = fig.subplots()
     ax.set_title(deployment["name"])
@@ -537,10 +541,18 @@ def create_pressure_plot(deployment, fig, params):
             labels = []
             indexes = []
             values = []
+
+            # if it has been saved
             for key, value in deployment["pressure_roi"].items():
                 labels.append(key)
                 indexes.append(deployment['x_t'][value[0]])
                 values.append(value[1])
+            
+            for key, value in scenario_data.get_pressure_roi().items():
+                labels.append(key)
+                indexes.append(deployment['x_t'][value[0]])
+                values.append(value[1])
+
             ax2.scatter(indexes, values)
             for idx,l in enumerate(labels):
                 ax2.annotate(l,(indexes[idx],values[idx]) )
@@ -558,9 +570,9 @@ def create_pressure_plot(deployment, fig, params):
 
 ## Compute passage and normalise the data 
 def compute_passage_durations(deployment_roi, sampling_frequency):
-    injection_to_nadir_duration = deployment_roi["Nadir"][0] - deployment_roi["Injection"][0] / sampling_frequency
-    nadir_to_tailwater_duration = deployment_roi["Tailwater"][0] - deployment_roi["Nadir"][0] / sampling_frequency
-    passage_duration = deployment_roi["Tailwater"][0] - deployment_roi["Injection"][0] / sampling_frequency
+    injection_to_nadir_duration = (deployment_roi["Nadir"][0] - deployment_roi["Injection"][0]) / sampling_frequency
+    nadir_to_tailwater_duration = (deployment_roi["Tailwater"][0] - deployment_roi["Nadir"][0]) / sampling_frequency
+    passage_duration = (deployment_roi["Tailwater"][0] - deployment_roi["Injection"][0]) / sampling_frequency
     return {
         "injection_to_nadir_duration":injection_to_nadir_duration,
         "nadir_to_tailwater_duration":nadir_to_tailwater_duration,
@@ -713,23 +725,24 @@ def consolidate_runs_for_scenario(scenario, params):
     s_normalised_pressure_matrix = []
     
     for r in scenario['runs']:
-        consolidated_run_data = consolidate_deployments(r['deployments'], params, params.get_parameter("h_min"), params.get_parameter("h_max"))
+        if(r["labeled"] == True):
+            consolidated_run_data = consolidate_deployments(r['deployments'], params, params.get_parameter("h_min"), params.get_parameter("h_max"))
 
-        s_run_names.extend([*consolidated_run_data['run_names']])
-        s_nadir_values.extend([*consolidated_run_data['nadir_values']])
-        s_prc_values.extend([*consolidated_run_data['prc_values']])
-        s_rpc_min_values.extend([*consolidated_run_data['rpc_min_values']])
-        s_rpc_max_values.extend([*consolidated_run_data['rpc_max_values']])
-        s_injection_to_nadir_duration_values.extend([*consolidated_run_data['injection_to_nadir_duration_values']])
-        s_nadir_to_tailwater_duration_values.extend([*consolidated_run_data['nadir_to_tailwater_duration_values']])
-        s_passage_duration_values.extend([*consolidated_run_data['passage_duration_values']])
-        s_max_pressure_values.extend([*consolidated_run_data['max_pressure_values']])
-        s_min_pressure_values.extend([*consolidated_run_data['min_pressure_values']])
-        
-        for n_t in consolidated_run_data['normalised_time_matrix']:
-            s_normalised_time_matrix.append(n_t)
-        for y_p in consolidated_run_data['normalised_pressure_matrix']:
-            s_normalised_pressure_matrix.append(y_p)
+            s_run_names.extend([*consolidated_run_data['run_names']])
+            s_nadir_values.extend([*consolidated_run_data['nadir_values']])
+            s_prc_values.extend([*consolidated_run_data['prc_values']])
+            s_rpc_min_values.extend([*consolidated_run_data['rpc_min_values']])
+            s_rpc_max_values.extend([*consolidated_run_data['rpc_max_values']])
+            s_injection_to_nadir_duration_values.extend([*consolidated_run_data['injection_to_nadir_duration_values']])
+            s_nadir_to_tailwater_duration_values.extend([*consolidated_run_data['nadir_to_tailwater_duration_values']])
+            s_passage_duration_values.extend([*consolidated_run_data['passage_duration_values']])
+            s_max_pressure_values.extend([*consolidated_run_data['max_pressure_values']])
+            s_min_pressure_values.extend([*consolidated_run_data['min_pressure_values']])
+            
+            for n_t in consolidated_run_data['normalised_time_matrix']:
+                s_normalised_time_matrix.append(n_t)
+            for y_p in consolidated_run_data['normalised_pressure_matrix']:
+                s_normalised_pressure_matrix.append(y_p)
     
     consolidated_scenario_data = {
             "s_run_names" : s_run_names,
