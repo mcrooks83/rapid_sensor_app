@@ -35,14 +35,18 @@ def get_total_acclimation_pressure(h, local_atmos_pressure):
     return total_acclimation_pressure
 
 #### LOAD SCENARIO ####
-# this function will need to be ammended as more sensor outputs come online
-# and will differ between v1 and v2
+
+
+# data will be a list of lists first list will be 100hz and 2nd list will be hig
 def create_data_axes(data, params):
+    print("length of data", len(data))
     #create lists of axis data
     x_t  = []
     y_p = []
     a_mag = []
-    for ind, val in enumerate(data):
+    x_t_hig = []
+    a_mag_hig = []
+    for ind, val in enumerate(data[0]):
         if(params.get_parameter("sensor_version") == 1):
             xt = ind  * 20 / params.get_parameter('fs') 
             x_t.append(xt)
@@ -51,8 +55,16 @@ def create_data_axes(data, params):
             xt = ind  / params.get_parameter('fs')
             x_t.append(xt)
             a_mag.append(val[5]) # adds the accel_magnitdue
+            
         y_p.append(val[4])
-    return x_t, y_p, a_mag
+    
+    if(len(data)>1): # there is hig data
+        for ind, val in enumerate(data[1]):
+            xt = ind  / params.get_parameter('fs_hg')
+            x_t_hig.append(xt)
+            a_mag_hig.append(val[-1])
+
+    return x_t, y_p, a_mag, x_t_hig, a_mag_hig
 
 # this unpacking is v1 and packet lenght is 11    
 def unpacking(row,params): 
@@ -78,25 +90,43 @@ def unpacking(row,params):
 
     return list_values
 
+def unpacking_v2_format_hig(row, params):
+    list_values = []
+    index = unpack('>I', bytes(row[0:4]))[0]
+    acc_x = unpack('>h', bytes(row[4:6]))[0]
+    acc_y = unpack('>h', bytes(row[6:8]))[0]
+    acc_z = unpack('>h', bytes(row[8:10]))[0]
+
+    index = (index / params.get_parameter("fs_hg"))
+    list_values.append(index)
+    acc_x = float(acc_x) #/ params.get_parameter('hig_gain')
+    list_values.append(acc_x)
+    acc_y = acc_y #/ params.get_parameter('hig_gain')
+    list_values.append(acc_y)
+    acc_z = acc_z #/ params.get_parameter('hig_gain')
+    list_values.append(acc_z)
+    amag = round(sqrt(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2)),2)
+    list_values.append(amag)
+    return list_values
+
 # this needs clarification for time axis
 def unpacking_v2_format(row,params): 
     list_values = []
     # 0
     index = unpack('>I', bytes(row[0:4]))[0]
+    acc_x = unpack('>h', bytes(row[4:6]))[0]
+    acc_y = unpack('>h', bytes(row[6:8]))[0]
+    acc_z = unpack('>h', bytes(row[8:10]))[0]
+   
     index = (index / params.get_parameter("fs")) / params.get_parameter("step_size")
     list_values.append(index)
-    #1
-    acc_x = unpack('>h', bytes(row[4:6]))[0]
-    acc_x = float(acc_x) / params.get_parameter('acc_gain')
+    acc_x = float(acc_x) * params.get_parameter('acc_gain')
     list_values.append(acc_x)
-    #2
-    acc_y = unpack('>h', bytes(row[6:8]))[0]
-    acc_y = acc_y / params.get_parameter('acc_gain')
+    acc_y = acc_y * params.get_parameter('acc_gain')
     list_values.append(acc_y)
-    #3
-    acc_z = unpack('>h', bytes(row[8:10]))[0]
-    acc_z = acc_z / params.get_parameter('acc_gain')
+    acc_z = acc_z * params.get_parameter('acc_gain')
     list_values.append(acc_z)
+
     #4,5,6 (gyro) 7,8,9 magnetometer, 10 = pressure 
     pressure = unpack('>H', bytes(row[22:24]))[0]
     pressure = pressure /params.get_parameter('p_gain')
@@ -107,14 +137,21 @@ def unpacking_v2_format(row,params):
     list_values.append(amag)
     return list_values
 
-# works for both v2 and v1
-def read_row(mm, params):
+def read_row(mm, params, hig=0):
     count = 0
     while True:
         count += 1
-        row = mm.read(params.get_parameter('packet_length')) 
-        if not len(row) == params.get_parameter('packet_length'): 
-            break 
+        if(hig==0):
+            row = mm.read(params.get_parameter('packet_length')) 
+            if not len(row) == params.get_parameter('packet_length'): 
+                break 
+        
+        if(hig==1):
+            row = mm.read(params.get_parameter('packet_length_hig')) 
+            if not len(row) == params.get_parameter('packet_length_hig'): 
+                break 
+        
+        
         yield row
 
 def get_results(filename, params):
@@ -128,6 +165,7 @@ def get_results(filename, params):
 
 
 def get_v1_pressure_results_only(filename, param):
+    complete_results = []
     results = []            # holds every 20th row
     with open(filename,'rb') as file:
         print("reading v1 data")
@@ -166,7 +204,8 @@ def get_v1_pressure_results_only(filename, param):
         
         mm.close()
         file.close() 
-    return results
+    complete_results.append(results)
+    return complete_results
 
 #######
 
@@ -183,14 +222,16 @@ def get_results_v2_format(filename, hig_filename, param):
     
     # get the hig
     if hig_filename:
+        print("getting results for", hig_filename)
         with open(hig_filename,'rb') as file:
             mm = mmap(file.fileno(), 0, access=ACCESS_READ)
-            #results = [unpacking_v2_format(row,param) for row in read_row(mm,param)]
-            #complete_results.append(results)
+            results = [unpacking_v2_format_hig(row,param) for row in read_row(mm,param, 1)]
+            complete_results.append(results)
             mm.close()
             file.close() 
         
-    return results
+    print("completed results", len(complete_results), flush=True)
+    return complete_results
 
 def pre_process_file(deployment, data, deployment_number, params):
     deployment_dict = {}
@@ -200,12 +241,18 @@ def pre_process_file(deployment, data, deployment_number, params):
     deployment_dict['is_faulty'] = False
     deployment_dict["labeled"] = False
     deployment_dict["pressure_roi"] = {} # empty set of pressure labels
-    x_t, y_p, a_mag = create_data_axes(data, params)
+    x_t, y_p, a_mag, x_t_hig, a_mag_hig = create_data_axes(data, params)
     deployment_dict['x_t']=x_t
     deployment_dict['y_p']=y_p
-    deployment_dict['a_mag'] = a_mag
+    #deployment_dict['a_mag'] = a_mag
+
     if(len(a_mag)>0):
         deployment_dict["a_mag"] = a_mag
+    
+    if(len(a_mag_hig)>0):
+        print("writing hig data")
+        deployment_dict["x_t_hig"] = x_t_hig
+        deployment_dict["a_mag_hig"] = a_mag_hig
     
     return deployment_dict
 
@@ -244,6 +291,7 @@ def load_scenario_from_directory(params, result_queue):
                 print("sensor version: 2")
                 deployments= glob('*.IMP')
                 hig_deployments = glob('*.HIG') # Hi G accleration
+                # sort so that 01 is first
 
             # if there are files to read
             if deployments:
@@ -260,13 +308,14 @@ def load_scenario_from_directory(params, result_queue):
                     else:
                         print(hig_deployments[idx])
 
+                        # list of lists where index 0 is 100hz and 1 is hig accel
                         res = get_results_v2_format(d, hig_deployments[idx], params)
-                        #res_hig = get_hig_results(hig_deployments[idx], params)
+                        
 
                     deployment_result = pre_process_file(d, res, deployment_number, params)
                     run_data["deployments"].append(deployment_result)
 
-                    # data gets put here
+                    # data gets put here d is just a file name for updating console with
                     result_queue.put({"d":d})
                     deployment_number=deployment_number+1
                 t2=time.time()
@@ -532,7 +581,10 @@ def create_pressure_plot(scenario_data, deployment, fig, params):
             ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.8, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
             ax.legend(loc='upper left')
-     
+        
+        if('a_mag_hig' in deployment):
+            ax.plot(deployment['x_t_hig'], deployment['a_mag_hig'], color="red", linewidth=2, picker=False, alpha=0.6, label="Acceleration Magntidue (g)")
+
     ax2 = ax.twinx()
 
     if(params.get_parameter("toggle_pressure")):
