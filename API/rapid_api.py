@@ -34,8 +34,6 @@ def get_total_acclimation_pressure(h, local_atmos_pressure):
     total_acclimation_pressure = local_atmos_pressure + water_pressure
     return total_acclimation_pressure
 
-#### LOAD SCENARIO ####
-
 
 # data will be a list of lists first list will be 100hz and 2nd list will be hig
 def create_data_axes(data, params):
@@ -99,12 +97,13 @@ def unpacking_v2_format_hig(row, params):
 
     index = (index / params.get_parameter("fs_hg"))
     list_values.append(index)
-    acc_x = float(acc_x) #/ params.get_parameter('hig_gain')
+    acc_x = float(acc_x) / params.get_parameter('hig_gain')
     list_values.append(acc_x)
-    acc_y = acc_y #/ params.get_parameter('hig_gain')
+    acc_y = acc_y / params.get_parameter('hig_gain')
     list_values.append(acc_y)
-    acc_z = acc_z #/ params.get_parameter('hig_gain')
+    acc_z = acc_z / params.get_parameter('hig_gain')
     list_values.append(acc_z)
+    # this is the hig mag
     amag = round(sqrt(pow(acc_x, 2) + pow(acc_y, 2) + pow(acc_z, 2)),2)
     list_values.append(amag)
     return list_values
@@ -306,9 +305,9 @@ def load_scenario_from_directory(params, result_queue):
                     if(sensor_version == 1):
                         res = get_v1_pressure_results_only(d, params)
                     else:
-                        print(hig_deployments[idx])
-
+                        
                         # list of lists where index 0 is 100hz and 1 is hig accel
+                        #what happens if there are no .HIG files?
                         res = get_results_v2_format(d, hig_deployments[idx], params)
                         
 

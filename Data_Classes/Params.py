@@ -39,7 +39,7 @@ class Parameters:
 
         self.parameters['p_gain'] = 10
         self.parameters['acc_gain'] = 10
-        self.parameters['hig_gain'] = 0.981
+        self.parameters['hig_gain'] = 1
 
         self.parameters["accel_max_window"] = 20
 

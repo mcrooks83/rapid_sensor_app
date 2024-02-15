@@ -166,7 +166,7 @@ class PlotFrame(LabelFrame):
                             else:
                                 self.mark_faulty_button.configure(text="Mark as Faulty")
 
-                            deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
+                            deployment_plot = api.create_pressure_plot(self.scenario_data, d, self.fig, self.params)
                             self.scenario_data.set_selected_deployment_index(index)
             
             self.plot_canvas.mpl_connect('pick_event', self.on_pick)
@@ -424,11 +424,13 @@ class PlotFrame(LabelFrame):
                 ax.autoscale(False)
     
     def reset_deployment_fig(self):
+        print("resetting deployment")
         selected_deployment = deployment = self.scenario_data.get_selected_deployment()
         scenario_data = self.scenario_data.get_scenario_data()
         selected_run = self.scenario_data.get_selected_run()
 
         self.scenario_data.clear_pressure_roi()
+
         for r in scenario_data["runs"]:
             if(r["name"] == selected_run):
                 for d in r["deployments"]:
@@ -436,14 +438,48 @@ class PlotFrame(LabelFrame):
                         if "is_faulty" in d:
                             d["is_faulty"] == False
                             self.mark_faulty_button.configure(text="Mark as Faulty")
-                        deployment_plot = api.create_pressure_plot(d, self.fig, self.params)
-        
+                        
+                        # remove roi_points from the deployment
+                        #deployment_dict["pressure_roi"] = {} # empty set of pressure labels
+                        d["pressure_roi"] = {}
+                        d["labeled"] = False
+                        selected_deployment = self.fig_combo.get().split(' (')[0]
+                        all_items = copy.deepcopy(self.fig_combo['values'])
+                        new_item_list = []
+                        for idx, item in enumerate(all_items):
+                            item_name = item.split(" (")[0]
+                            if(item_name == selected_deployment):
+                                new_item_list.append(item_name + " " + "(not labeled)")
+                        
+                                self.fig_combo.set(new_item_list[idx])
+                            else:
+                                new_item_list.append(item)
+                        self.fig_combo['values'] =  new_item_list
+                        deployment_plot = api.create_pressure_plot(self.scenario_data,d, self.fig, self.params)
         
         self.plot_canvas.mpl_connect('pick_event', self.on_pick)
 
         self.fig.canvas.draw()
         for ax in self.fig.get_axes():
                 ax.autoscale(False)
+
+        scenario_to_save = {
+            "name": scenario_data["name"],
+            "runs": scenario_data["runs"],
+            "labeled": scenario_data["labeled"]
+        }
+
+        #save out the data
+        write_data = api.write_scenario_to_json_file(scenario_to_save, self.params)
+
+        if(write_data):
+            print("scenario written succcesfully")
+            self.console_frame.clear_console()
+            self.console_frame.insert_text("Scenario " + self.scenario_data.get_scenario_data()["name"] + " saved succesfully" '\n') 
+            self.console_frame.insert_text("Pressure ROI values " + json.dumps(self.scenario_data.get_pressure_roi())+ " saved succesfully" '\n') 
+            #clear roi points 
+            self.scenario_data.clear_pressure_roi()
+        print("done")
 
 
     def on_pick(self, event): 
@@ -508,8 +544,6 @@ class PlotFrame(LabelFrame):
             self.fig.get_axes()[1].scatter(indexes, values)
             for idx,l in enumerate(labels):
                 self.fig.get_axes()[1].annotate(l,(indexes[idx],values[idx]) )
-
-            
 
         self.fig.canvas.draw()       
     
