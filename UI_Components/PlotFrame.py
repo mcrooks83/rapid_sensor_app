@@ -497,18 +497,6 @@ class PlotFrame(LabelFrame):
         #over right any previous point
         self.scenario_data.set_pressure_roi_point(roi_point, (int(ind[0]), float(ydata[ind[0]])))
         prev_roi_points = self.scenario_data.get_pressure_roi()
-
-        #prev_roi_set_points = {}
-        # get any previously set points
-        #selected_deployment = self.scenario_data.get_selected_deployment()
-        #scenario_data = self.scenario_data.get_scenario_data()
-        #selected_run = self.scenario_data.get_selected_run()
-        #for r in scenario_data["runs"]:
-        #    if(r["name"] == selected_run):
-        #        for d in r["deployments"]:
-        #            if (d["name"] == selected_deployment):
-        #                prev_roi_set_points = d["pressure_roi"]
-        #                print("from d",prev_roi_set_points)
         
         labels = []
         indexes = []
@@ -523,22 +511,26 @@ class PlotFrame(LabelFrame):
                 x_coord = 0
                 y_coord = 0
                 annotations = self.fig.get_axes()[1].texts
+                print("annotations", annotations)
                 collections = self.fig.get_axes()[1].collections
                 for index, a in enumerate(reversed(annotations)):
                     if(a.get_text() == roi_point):
-                        original_index = len(annotations) - index - 1
-                        self.fig.get_axes()[1].texts.pop(original_index)
+                        #original_index = len(annotations) - index - 1
+                        print("popping 1")
+                        #self.fig.get_axes()[1].texts.remove(original_index)
+                        a.remove()
                         x_coord=a.xy[0]
                         y_coord=a.xy[1]
-                        print(x_coord, y_coord)
-                        break
+                        
                 
                 for index, c in enumerate(reversed(collections)):
                     offsets = c.get_offsets()
                     for o in offsets:
                         if(o[0] == x_coord and o[1]==y_coord):
-                            original_index = len(collections) - index - 1
-                            self.fig.get_axes()[1].collections.pop(original_index)
+                            #original_index = len(collections) - index - 1
+                            print("popping 2")
+                            #self.fig.get_axes()[1].collections.remove(original_index)
+                            c.remove()
                 
             # plot the values
             self.fig.get_axes()[1].scatter(indexes, values)

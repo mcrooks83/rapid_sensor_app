@@ -459,14 +459,13 @@ def create_pressure_plot(scenario_data, deployment, fig, params):
     ax.set_title(deployment["name"])
 
     if(params.get_parameter("toggle_accleration")):
-        if("a_mag" in  deployment):
+        if('a_mag_hig' in deployment):
+            ax.plot(deployment['x_t_hig'], deployment['a_mag_hig'], color="red", linewidth=2, picker=False, alpha=0.6, label="Acceleration Magntidue (g)")
+        elif("a_mag" in  deployment):
             ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.8, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
             ax.legend(loc='upper left')
         
-        if('a_mag_hig' in deployment):
-            ax.plot(deployment['x_t_hig'], deployment['a_mag_hig'], color="red", linewidth=2, picker=False, alpha=0.6, label="Acceleration Magntidue (g)")
-
     ax2 = ax.twinx()
 
     if(params.get_parameter("toggle_pressure")):
