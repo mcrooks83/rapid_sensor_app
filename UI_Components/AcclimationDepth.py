@@ -44,8 +44,8 @@ class AcclimationDepth(LabelFrame):
 
         if max_data and min_data:
             try:
-                float(max_data)
-                float(min_data)
+                max_data = float(max_data)
+                min_data = float(min_data)
                 self.validation_label.config(
                     text=f"Set Acclimation Depth",
                     foreground="green",

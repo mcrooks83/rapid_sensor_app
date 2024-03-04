@@ -5,6 +5,7 @@ from tkinter.ttk import Combobox, Progressbar
 import queue
 import multiprocessing
 
+
 from API import rapid_api as api
 
 class LoadScenarioData(LabelFrame):

@@ -29,6 +29,7 @@ def make_scenario_list(s1, s2):
 def get_total_acclimation_pressure(h, local_atmos_pressure):
     rho = 997.05 #density of water
     g = 9.81 #gravitational acceleration
+    #print("h is:", h,  type(h))
     water_pressure= (rho * g * h)/100
     local_atmos_pressure = 1000
     total_acclimation_pressure = local_atmos_pressure + water_pressure
