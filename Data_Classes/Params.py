@@ -24,6 +24,7 @@ class Parameters:
         self.parameters['complete__scenarios'] = 'complete_scenarios'
         self.parameters['select_folder_dir'] = ""
         self.parameters['roi_points_file'] = "roi_points.json"
+        self.parameters["export_dir"] = "exports"
 
         #v2 default
         self.parameters["sensor_version"] = 2

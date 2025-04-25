@@ -508,6 +508,31 @@ def compute_passage_durations(deployment_roi, sampling_frequency):
         
     }
 
+#params.get_parameter('resample_N')
+def normalise_complete_deployment_dataset(deployment, N):
+
+    # resample pressure
+    y_p_resampled = resample(deployment["y_p"], N)
+
+    # resample a_mag
+    if "a_mag" in deployment:
+        a_mag_resampled = resample(deployment["a_mag"], N)
+
+    # resample time axis
+    x_t_resampled = resample(deployment["x_t"], N)
+
+    # hig 
+    #if "x_t_hig" in  deployment:
+    #    x_t_hig_resampled = resample(deployment["x_t_hig"], N)
+    
+    normalised_data = {
+        "x_t_norm" : x_t_resampled,
+        "y_p_resampled" : y_p_resampled,
+        "a_mag_resampled": a_mag_resampled
+    }
+    
+    return normalised_data
+
 def normalise_deployment_data(deployment, N):
     print(deployment["name"])
 
@@ -519,7 +544,6 @@ def normalise_deployment_data(deployment, N):
     
     idx_start_post = idx_stop +1
     idx_stop_post = deployment['pressure_roi']['Tailwater'][0]
-    print(f"DEBUG start/stop post {idx_start_post} {idx_stop_post}")
     
     #print("index stop post", idx_stop_post)
     size_post = idx_stop_post - (idx_start_post+1)
@@ -577,7 +601,6 @@ def compute_passage_and_normalise_for_a_deployment_sync(deployment, params):
 #    return "run"
 
 def compute_passage_and_normalise_for_a_run_sync(runs, params):
-    deployment_list = []
     for r in runs:
         print("computing passage durations and normalising")
         for d in r['deployments']:
@@ -585,6 +608,25 @@ def compute_passage_and_normalise_for_a_run_sync(runs, params):
             if(d["is_faulty"] == False):
                 res = compute_passage_and_normalise_for_a_deployment_sync(d, params)
     return "run"
+
+def normalise_deployments_for_runs(runs, params):
+    normalised_runs = []
+    for r in runs:
+        _r = {
+            "name": r["name"],
+            "deployments" : []
+        }
+        for d in r['deployments']:
+            # only include non faulty deployments
+            if(d["is_faulty"] == False):
+                res = normalise_complete_deployment_dataset(d, params.get_parameter('resample_N'))
+                _d = {
+                    "name": d["name"],
+                    "norm_data": res
+                }
+                _r["deployments"].append(_d)
+        normalised_runs.append(_r)
+    return normalised_runs
 
 
 

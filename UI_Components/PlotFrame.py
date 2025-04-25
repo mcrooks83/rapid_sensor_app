@@ -9,7 +9,10 @@ from UI_Components.Table3 import Table3
 import asyncio
 import json
 import copy
-
+from pathlib import Path
+import os
+from os.path import exists
+import csv
 from API import rapid_api as api
 
 class PlotFrame(LabelFrame):
@@ -93,14 +96,106 @@ class PlotFrame(LabelFrame):
         self.params.update_parameter("toggle_accleration", value )
         self.reload_deployment_fig()
 
+###################################################################################################################################
     # NEW
     def export_scenario_data(self):
-        print("exporting scenario data")
         # get the scenario data 
         sd = self.scenario_data.get_scenario_data_for_computation()
-        for key in sd.keys():
-            print(key)
 
+        if(sd['labeled']):
+            print("exporting scenario data")
+            self.console_frame.insert_text("Exporting scenario data")
+            
+            
+            # choose only labelled runs
+            runs_to_use = []
+            for r in sd["runs"]:
+                #at least 1 run is fully labelled
+                if(r["labeled"] == True):
+                    runs_to_use.append(r)
+
+            # get the normalised data for the scenario - should be all the deployments in the runs
+            if(len(runs_to_use) > 0):
+                result = api.normalise_deployments_for_runs(runs_to_use, self.params)
+
+                for r in result:
+                    print(r.keys(), sd["name"], r["name"], len(r["deployments"]))
+
+                # now we have the normalised data we want to export it to csv files
+                # dirs = scenario name, run name, deployment name -> file
+
+                #if export dir does not yet exisit create it
+                exports_dir = self.params.get_parameter('export_dir')
+
+                if not exists(exports_dir):
+                    os.makedirs(exports_dir)
+                    print(f"Directory '{exports_dir}' created successfully in the current working directory!")
+
+                scenario_dir_path = os.path.join(exports_dir, sd["name"])
+
+                if not os.path.exists(scenario_dir_path):
+                    os.makedirs(scenario_dir_path)
+                    print(f"Created subdirectory: {scenario_dir_path}")
+                else:
+                    print(f"Subdirectory already exists: {scenario_dir_path}")
+
+                for r in result:
+                    # create a dir for the run
+                    run_path = os.path.join(scenario_dir_path, r["name"])
+                    if not os.path.exists(run_path):
+                        os.makedirs(run_path)
+                        print(f"Created subdirectory: {run_path}")
+
+                    for d in r["deployments"]:
+                        d_path = os.path.join(run_path, d["name"])
+                        if not os.path.exists(d_path):
+                            os.makedirs(d_path)
+                            print(f"Created subdirectory: {d_path}")
+
+                
+                # write the data to csv files in the correct directory
+                for r in result:
+                    run_path = os.path.join(exports_dir, sd["name"], r["name"])
+                    for d in r["deployments"]:
+                        d_path = os.path.join(run_path, d["name"])
+                        filename = f"{d['name']}.csv"
+                        filepath = os.path.join(d_path, filename)
+                        os.makedirs(d_path, exist_ok=True)
+                        data_to_write = list(zip(d["norm_data"]["x_t_norm"], d["norm_data"]["y_p_resampled"], d["norm_data"]["a_mag_resampled"]))
+                        with open(filepath, mode='w', newline='') as f:
+                            writer = csv.writer(f)
+                            writer.writerow(["x_y", "y_p", "a_mag"])  # Optional header
+                            writer.writerows(data_to_write)
+
+                # compute the statistcs
+                result = api.compute_passage_and_normalise_for_a_run_sync(runs_to_use, self.params)
+                sd["consolidated_scenario_data"] = api.consolidate_runs_for_scenario(sd, self.params)
+                sd["table_3_stats"] = api.compute_table_3_statistics(sd)
+                stats_dict = sd["table_3_stats"]
+
+                # write to csv in scenario name dir
+                csv_path = os.path.join(exports_dir, sd["name"], "stats_summary.csv")
+                with open(csv_path, mode='w', newline='') as f:
+                    writer = csv.writer(f)
+
+                    # Extract headers from one of the inner dicts
+                    headers = ["Measurement"] + list(next(iter(stats_dict.values())).keys())
+                    writer.writerow(headers)
+
+                    # Write each row
+                    for stat_name, values in stats_dict.items():
+                        row = [stat_name] + list(values.values())
+                        writer.writerow(row)
+                self.console_frame.insert_text("Exported")
+                self.console_frame.insert_text("Check exports directory")
+            else:
+                self.console_frame.insert_text("Cannot export") 
+                self.console_frame.insert_text("There are no runs")
+        else:
+            self.console_frame.insert_text("Cannot export") 
+            self.console_frame.insert_text("The scenario is not completely labeled") 
+
+###################################################################################################################################
 
     def compute_statistics(self):
         print("computing statistics", flush=True)
@@ -114,7 +209,7 @@ class PlotFrame(LabelFrame):
 
         #if("labeled" in sd.keys()):
         if(len(runs_to_use) > 0):
-            if(sd['labeled']):
+            if(sd['labeled']): # this checks that the scenario is completely labelled
                 #result = api.compute_passage_and_normalise_for_a_run_sync(sd["runs"], self.params)
                 result = api.compute_passage_and_normalise_for_a_run_sync(runs_to_use, self.params)
                 sd["consolidated_scenario_data"] = api.consolidate_runs_for_scenario(sd, self.params)

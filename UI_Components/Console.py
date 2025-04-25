@@ -35,6 +35,7 @@ class ConsoleFrame(LabelFrame):
     def insert_text(self, text):
         self.console.configure(state ='normal')
         self.console.insert(INSERT,text)
+        self.console.insert(INSERT, "\n")
         self.configure_state('disabled')
         self.set_yview(END)
     
