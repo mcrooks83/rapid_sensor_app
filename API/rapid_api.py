@@ -17,9 +17,6 @@ import statistics
 ### HELPERS ###
 def make_scenario_list(s1, s2):
     s_list = []
-    print("box labels")
-    print(s1)
-    print(s2)
     if s1 != " " and len(s1)>0:
         s_list.append(s1)
     if s2 != " " and len(s2)>0:
@@ -38,7 +35,6 @@ def get_total_acclimation_pressure(h, local_atmos_pressure):
 
 # data will be a list of lists first list will be 100hz and 2nd list will be hig
 def create_data_axes(data, params):
-    print("length of data", len(data))
     #create lists of axis data
     x_t  = []
     y_p = []
@@ -348,7 +344,6 @@ def write_scenario_to_json_file(s, params):
 def read_scenario_from_json_file(params, scenario_name):
     # Opening JSON file
     with open(params.get_parameter("working_dir") + "/" + params.get_parameter("output_dir_name") + "/" + scenario_name + ".json", 'r') as openfile:
-        print(openfile)
         # Reading from json file
         scenario_data = json.load(openfile)
         return scenario_data
@@ -431,7 +426,6 @@ def create_fig_6_box_plots(scenarios, fig):
         boxes = []
         labels = []
         for key in plot_dict:
-            print(plot_dict[key])
             #define_box_properties(ax, 
             bp1 =  ax.boxplot(plot_dict[key],
                               patch_artist=True, 
@@ -525,10 +519,12 @@ def normalise_deployment_data(deployment, N):
     
     idx_start_post = idx_stop +1
     idx_stop_post = deployment['pressure_roi']['Tailwater'][0]
+    print(f"DEBUG start/stop post {idx_start_post} {idx_stop_post}")
+    
     #print("index stop post", idx_stop_post)
-    size_post = idx_stop_post - (idx_start_post+1);
+    size_post = idx_stop_post - (idx_start_post+1)
     #print("size post", size_post)
-    ts_post = np.arange(0, size_post+1)/(2*size_post)+0.5;
+    ts_post = np.arange(0, size_post+1)/(2*size_post)+0.5 # this is empty
     #print("ts_post", ts_post)
     n_to_t = deployment['y_p'][idx_start_post:idx_stop_post+1]
     
@@ -563,7 +559,6 @@ def normalise_deployment_data(deployment, N):
 
 def compute_passage_and_normalise_for_a_deployment_sync(deployment, params):
     print("computing only passasge durations")
-    print(deployment["pressure_roi"],  flush=True)
     deployment["passage_durations"] = compute_passage_durations(deployment['pressure_roi'], params.get_parameter('fs'))
     deployment['normalised_data'] = normalise_deployment_data(deployment, params.get_parameter('resample_N')) 
 

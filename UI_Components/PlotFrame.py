@@ -65,6 +65,11 @@ class PlotFrame(LabelFrame):
 
         self.table_3_button = Button(self, text="compute statistics", command= self.compute_statistics)
         self.table_3_button.grid(row=5, column=0, sticky="w")
+
+        # export data button
+        self.table_3_export = Button(self, text="export", command= self.export_scenario_data)
+        self.table_3_export.grid(row=5, column=1, sticky="w", pady=10)
+
         #frame for table 3 statisticsL
         self.table_3_frame = Frame(self)
         self.table_3_frame.grid(row=7, column=0,rowspan=1,columnspan=10, sticky='nsew',padx=5, pady=5)
@@ -87,6 +92,15 @@ class PlotFrame(LabelFrame):
         value = not self.params.get_parameter("toggle_accleration")
         self.params.update_parameter("toggle_accleration", value )
         self.reload_deployment_fig()
+
+    # NEW
+    def export_scenario_data(self):
+        print("exporting scenario data")
+        # get the scenario data 
+        sd = self.scenario_data.get_scenario_data_for_computation()
+        for key in sd.keys():
+            print(key)
+
 
     def compute_statistics(self):
         print("computing statistics", flush=True)
@@ -516,7 +530,6 @@ class PlotFrame(LabelFrame):
                 for index, a in enumerate(reversed(annotations)):
                     if(a.get_text() == roi_point):
                         #original_index = len(annotations) - index - 1
-                        print("popping 1")
                         #self.fig.get_axes()[1].texts.remove(original_index)
                         a.remove()
                         x_coord=a.xy[0]
@@ -528,7 +541,6 @@ class PlotFrame(LabelFrame):
                     for o in offsets:
                         if(o[0] == x_coord and o[1]==y_coord):
                             #original_index = len(collections) - index - 1
-                            print("popping 2")
                             #self.fig.get_axes()[1].collections.remove(original_index)
                             c.remove()
                 

@@ -5,9 +5,6 @@ from UI_Components.PlotFrame import PlotFrame
 from UI_Components.LeftFrame import LeftFrame
 from UI_Components.Console import ConsoleFrame as console
 
-
-
-
 class AppCanvas(PanedWindow):
     def __init__(self, master, params, scenario_data,  *args, **kwargs):
         super().__init__(master, *args, **kwargs)
