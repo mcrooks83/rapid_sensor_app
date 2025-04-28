@@ -457,6 +457,7 @@ def create_pressure_plot(scenario_data, deployment, fig, params):
         if('a_mag_hig' in deployment):
             ax.plot(deployment['x_t_hig'], deployment['a_mag_hig'], color="red", linewidth=2, picker=False, alpha=0.6, label="Acceleration Magntidue (g)")
         elif("a_mag" in  deployment):
+            print(deployment["x_t"])
             ax.plot(deployment['x_t'], deployment['a_mag'], color="black", linewidth=2, picker=False, alpha=0.8, label="Acceleration Magntidue (g)")
             ax.set_ylabel('Acceleration Magntidue (g)')
             ax.legend(loc='upper left')
@@ -521,6 +522,8 @@ def normalise_complete_deployment_dataset(deployment, N):
     # resample time axis
     x_t_resampled = resample(deployment["x_t"], N)
 
+    print(x_t_resampled)
+
     # hig 
     #if "x_t_hig" in  deployment:
     #    x_t_hig_resampled = resample(deployment["x_t_hig"], N)
@@ -564,13 +567,20 @@ def normalise_deployment_data(deployment, N):
     n_to_t_resampled[-1]=n_to_t[-1]
     n_to_t_resampled[0] = n_to_t[0]
     
+
+    # need to add accel_mag between injection and tailwater
+    i_t_a_mag = deployment['a_mag'][idx_start:idx_stop_post+1]
+    a_mag_resampled = resample(i_t_a_mag, int(N))
+    print("length of resampled", len(a_mag_resampled), len(np.concatenate((i_to_n_resampled, n_to_t_resampled))))
+
     normalised_data = {
         'ts_pre':new_ts_pre,
         'i_to_n_resampled': i_to_n_resampled,
         'ts_post':new_ts_post,
         'n_to_t_resampled':n_to_t_resampled,
         "x_t_norm" : np.concatenate((new_ts_pre,new_ts_post)),
-        "y_p_resampled" : np.concatenate((i_to_n_resampled, n_to_t_resampled))
+        "y_p_resampled" : np.concatenate((i_to_n_resampled, n_to_t_resampled)),
+        "a_mag_resampled": a_mag_resampled,
     }
     
     return normalised_data
@@ -619,7 +629,8 @@ def normalise_deployments_for_runs(runs, params):
         for d in r['deployments']:
             # only include non faulty deployments
             if(d["is_faulty"] == False):
-                res = normalise_complete_deployment_dataset(d, params.get_parameter('resample_N'))
+                #res = normalise_complete_deployment_dataset(d, params.get_parameter('resample_N'))
+                res = normalise_deployment_data(d, params.get_parameter('resample_N'))
                 _d = {
                     "name": d["name"],
                     "norm_data": res

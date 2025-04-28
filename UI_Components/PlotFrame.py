@@ -116,8 +116,23 @@ class PlotFrame(LabelFrame):
 
             # get the normalised data for the scenario - should be all the deployments in the runs
             if(len(runs_to_use) > 0):
+
+                # this is wrong and duplicates from computing statistics
                 result = api.normalise_deployments_for_runs(runs_to_use, self.params)
 
+                """
+                norm_data is the key in each deployment object for the data
+                norm_data = {
+                    'ts_pre':new_ts_pre,
+                    'i_to_n_resampled': i_to_n_resampled,
+                    'ts_post':new_ts_post,
+                    'n_to_t_resampled':n_to_t_resampled,
+                    "x_t_norm" : np.concatenate((new_ts_pre,new_ts_post)),
+                    "y_p_resampled" : np.concatenate((i_to_n_resampled, n_to_t_resampled)),
+                    "a_mag_resampled": a_mag_resampled,
+                }
+                """
+            
                 for r in result:
                     print(r.keys(), sd["name"], r["name"], len(r["deployments"]))
 
@@ -164,7 +179,7 @@ class PlotFrame(LabelFrame):
                         data_to_write = list(zip(d["norm_data"]["x_t_norm"], d["norm_data"]["y_p_resampled"], d["norm_data"]["a_mag_resampled"]))
                         with open(filepath, mode='w', newline='') as f:
                             writer = csv.writer(f)
-                            writer.writerow(["x_y", "y_p", "a_mag"])  # Optional header
+                            writer.writerow(["y_p", "a_mag"])  # Optional header
                             writer.writerows(data_to_write)
 
                 # compute the statistcs
