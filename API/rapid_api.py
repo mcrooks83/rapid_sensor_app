@@ -509,32 +509,6 @@ def compute_passage_durations(deployment_roi, sampling_frequency):
         
     }
 
-#params.get_parameter('resample_N')
-def normalise_complete_deployment_dataset(deployment, N):
-
-    # resample pressure
-    y_p_resampled = resample(deployment["y_p"], N)
-
-    # resample a_mag
-    if "a_mag" in deployment:
-        a_mag_resampled = resample(deployment["a_mag"], N)
-
-    # resample time axis
-    x_t_resampled = resample(deployment["x_t"], N)
-
-    print(x_t_resampled)
-
-    # hig 
-    #if "x_t_hig" in  deployment:
-    #    x_t_hig_resampled = resample(deployment["x_t_hig"], N)
-    
-    normalised_data = {
-        "x_t_norm" : x_t_resampled,
-        "y_p_resampled" : y_p_resampled,
-        "a_mag_resampled": a_mag_resampled
-    }
-    
-    return normalised_data
 
 def normalise_deployment_data(deployment, N):
     print(deployment["name"])
@@ -629,7 +603,6 @@ def normalise_deployments_for_runs(runs, params):
         for d in r['deployments']:
             # only include non faulty deployments
             if(d["is_faulty"] == False):
-                #res = normalise_complete_deployment_dataset(d, params.get_parameter('resample_N'))
                 res = normalise_deployment_data(d, params.get_parameter('resample_N'))
                 _d = {
                     "name": d["name"],
